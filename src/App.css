@@ -1,3 +1,31 @@
+/* Rounded inputs specifically in gas edit panel */
+.gas-edit-card .ant-input,
+.gas-edit-card .ant-input-affix-wrapper {
+  border-radius: 12px !important;
+}
+
+.gas-edit-card .ant-select-selector {
+  border-radius: 12px !important;
+}
+
+/* Let the linked rooms Select grow to multiple rows and scroll if too tall */
+.gas-edit-card .ant-select-multiple .ant-select-selector {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  max-height: 240px; /* grows up to this height, then scrolls */
+  overflow-y: auto;
+}
+
+.gas-edit-card .ant-select-multiple .ant-select-selection-overflow {
+  flex-wrap: wrap;
+}
+
+.gas-edit-card .ant-select-multiple .ant-select-selection-item {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
 .App {
   text-align: center;
 }
@@ -26,6 +54,29 @@
 
 .App-link {
   color: #61dafb;
+}
+
+/* Tweak AntD ColorPicker visuals to match rounded cards */
+.ant-color-picker, .ant-color-picker-trigger {
+  border-radius: 12px !important;
+}
+.ant-color-picker-swatch {
+  border-radius: 10px !important;
+}
+
+/* Prevent color picker text from resizing layout (keep trigger stable) */
+.ant-color-picker-trigger {
+  min-width: 140px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ant-color-picker-trigger .ant-color-picker-text,
+.ant-color-picker-trigger input {
+  max-width: 84px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @keyframes App-logo-spin {
