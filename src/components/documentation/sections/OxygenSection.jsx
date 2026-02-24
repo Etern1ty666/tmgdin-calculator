@@ -32,6 +32,9 @@ export default function OxygenSection() {
         </span>
       }
     >
+      {/* --- Таблица параметров --- */}
+      <GasDocsTable gasKey="oxygen" />
+      <Divider />
       {/* --- 1. Назначение --- */}
       <Paragraph>
         <Text strong>Область применения:</Text> кислород используется для

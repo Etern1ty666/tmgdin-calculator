@@ -60,7 +60,7 @@ function getPipeDiameter(totalLpm) {
   return { innerDiameterRounded, outerDiameter, wallThickness, actualInner };
 }
 
-export default function OxygenResult({ values, rooms }) {
+export default function OxygenResult({ values, rooms, manualTotals, manualUnits }) {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth < 700 : false
   );
@@ -73,7 +73,10 @@ export default function OxygenResult({ values, rooms }) {
   }, []);
   const gas = gases.find((g) => g.key === "oxygen");
 
-  const hasOxygenData = Object.values(values).some(
+  const manualValue = Number(manualTotals?.oxygen || 0);
+  const manualUnit = manualUnits?.oxygen || "hour";
+  const hasManual = manualValue > 0;
+  const hasOxygenData = hasManual || Object.values(values).some(
     (roomData) => Number(roomData?.oxygen) > 0
   );
   if (!hasOxygenData) return null;
@@ -82,30 +85,63 @@ export default function OxygenResult({ values, rooms }) {
   let totalPoints = 0;
   const details = [];
 
-  rooms.forEach((room) => {
-    const N = Number(values[room.key]?.oxygen || 0);
-    if (N <= 0) return;
+  if (hasManual) {
+    if (manualUnit === "day") {
+      totalOxygenLPerDay = manualValue;
+    } else {
+      totalOxygenLPerDay = manualValue * 1440;
+    }
+    details.push({
+      room: "Ручной ввод",
+      V_m: manualValue,
+      N: 1,
+      K: 1,
+      t: manualUnit === "day" ? 24 : 24,
+      V_day_room: totalOxygenLPerDay,
+      manualUnit,
+    });
+  } else {
+    rooms.forEach((room) => {
+      const N = Number(values[room.key]?.oxygen || 0);
+      if (N <= 0) return;
 
-    const gasParams = room.gases?.find((g) => g.key === "oxygen");
-    if (!gasParams) return;
+      const gasParams = room.gases?.find((g) => g.key === "oxygen");
+      if (!gasParams) return;
 
-    const V_m = Number(gasParams.flowRate ?? 0);
-    const K = Number(gasParams.usageFactor ?? 1);
-    const t = Number(gasParams.hoursPerDay ?? 0);
+      const V_m = Number(gasParams.flowRate ?? 0);
+      const K = Number(gasParams.usageFactor ?? 1);
+      const t = Number(gasParams.hoursPerDay ?? 0);
 
-    const V_day_room = V_m * N * K * t * 60;
-    totalOxygenLPerDay += V_day_room;
-    totalPoints += N;
+      const V_day_room = V_m * N * K * t * 60;
+      totalOxygenLPerDay += V_day_room;
+      totalPoints += N;
 
-    details.push({ room: room.name || room.key, V_m, N, K, t, V_day_room });
-  });
+      details.push({ room: room.name || room.key, V_m, N, K, t, V_day_room });
+    });
+  }
 
   // Подробная формула
   const formulaExpression = details
     .map((d) => `(${d.V_m}×${d.N}×${d.K}×${d.t}×60)`)
     .join(" + ");
 
-  const tooltipDetailed = (
+  const tooltipDetailed = hasManual ? (
+    <div style={{ maxWidth: 340, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 12 }}>
+        Введено вручную: <b>{manualValue.toLocaleString("ru-RU")} {manualUnit === "day" ? "л/сут" : "л/мин"}</b>
+      </div>
+      <hr style={{ margin: "6px 0", opacity: 0.3 }} />
+      <div style={{ fontSize: 12 }}>
+        {manualUnit === "day"
+          ? <>
+              <b>{manualValue.toLocaleString("ru-RU")} л/сут</b><br/>
+              {manualValue.toLocaleString("ru-RU")} ÷ 1440 = <b>{(manualValue/1440).toLocaleString("ru-RU", {maximumFractionDigits: 2})} л/мин</b>
+            </>
+          : <>{manualValue.toLocaleString("ru-RU")} × 1440 = <b>{totalOxygenLPerDay.toLocaleString("ru-RU")} л/сут</b></>
+        }
+      </div>
+    </div>
+  ) : (
     <div style={{ maxWidth: 340, lineHeight: 1.5 }}>
       {details.map((d, i) => (
         <div key={i} style={{ fontSize: 12, display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
@@ -123,7 +159,16 @@ export default function OxygenResult({ values, rooms }) {
   );
 
   // Средние значения
-  const avgLpm = Math.round(totalOxygenLPerDay / 1440);
+  let avgLpm;
+  if (hasManual) {
+    if (manualUnit === "day") {
+      avgLpm = +(manualValue / 1440).toFixed(2);
+    } else {
+      avgLpm = manualValue;
+    }
+  } else {
+    avgLpm = Math.round(totalOxygenLPerDay / 1440);
+  }
   const avgM3ph = parseFloat((totalOxygenLPerDay / 1000 / 24).toFixed(2));
   const pipeData = getPipeDiameter(avgLpm);
   const pipe = pipeData.innerDiameterRounded;
@@ -248,9 +293,13 @@ export default function OxygenResult({ values, rooms }) {
           <Title level={5} style={{ margin: 0, color: gas.color }}>
             Кислород
           </Title>
-          <Tooltip title="Общее количество точек">
-            <Tag>{totalPoints}</Tag>
-          </Tooltip>
+          {hasManual ? (
+            <Tag color="gold">ручной ввод</Tag>
+          ) : (
+            <Tooltip title="Общее количество точек">
+              <Tag>{totalPoints}</Tag>
+            </Tooltip>
+          )}
         </Space>
       }
       style={{

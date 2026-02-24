@@ -2,7 +2,8 @@ import {
   FileTextOutlined,
   SettingOutlined,
   CalculatorOutlined,
-  HomeOutlined
+    HomeOutlined,
+    EditOutlined
 } from "@ant-design/icons";
 
 const TopMenuButtons = [
@@ -26,6 +27,15 @@ const TopMenuButtons = [
         location: "/calculator",
         icon: <CalculatorOutlined />,
         title: "Калькулятор",
+        shape: 'round',
+        size: 'medium'
+
+
+    },
+    {
+        location: "/calculator-manual",
+        icon: <EditOutlined />,
+        title: "Ручной ввод",
         shape: 'round',
         size: 'medium'
 

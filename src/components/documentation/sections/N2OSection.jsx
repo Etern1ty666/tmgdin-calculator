@@ -32,6 +32,9 @@ export default function N2OSection() {
         </span>
       }
     >
+      {/* --- Таблица параметров --- */}
+      <GasDocsTable gasKey="n2o" />
+      <Divider />
       {/* --- 1. Область применения --- */}
       <Paragraph>
         <Text strong>Область применения:</Text> закись азота применяется как

@@ -52,7 +52,7 @@ function getPipeDiameter(totalLpm) {
   return { innerDiameterRounded, outerDiameter, wallThickness, actualInner };
 }
 
-export default function CO2Result({ values, rooms }) {
+export default function CO2Result({ values, rooms, manualTotals, manualUnits }) {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth < 700 : false
   );
@@ -65,8 +65,12 @@ export default function CO2Result({ values, rooms }) {
   }, []);
   const gas = gases.find((g) => g.key === "co2");
 
+
   // Проверяем, есть ли данные по CO₂
-  const hasData = Object.values(values).some(
+  const manualValue = Number(manualTotals?.co2 || 0);
+  const manualUnit = manualUnits?.co2 || "hour";
+  const hasManual = manualValue > 0;
+  const hasData = hasManual || Object.values(values).some(
     (roomData) => Number(roomData?.co2) > 0
   );
   if (!hasData) return null;
@@ -75,30 +79,64 @@ export default function CO2Result({ values, rooms }) {
   let totalPoints = 0;
   const details = [];
 
-  rooms.forEach((room) => {
-    const N = Number(values[room.key]?.co2 || 0);
-    if (N <= 0) return;
+  if (hasManual) {
+    if (manualUnit === "day") {
+      totalLPerDay = manualValue;
+    } else {
+      totalLPerDay = manualValue * 1440;
+    }
+    details.push({
+      room: "Ручной ввод",
+      V_m: manualValue,
+      N: 1,
+      K: 1,
+      t: manualUnit === "day" ? 24 : 24,
+      V_day: totalLPerDay,
+      manualUnit,
+    });
+  } else {
+    rooms.forEach((room) => {
+      const N = Number(values[room.key]?.co2 || 0);
+      if (N <= 0) return;
 
-    const gp = room.gases?.find((g) => g.key === "co2");
-    if (!gp) return;
+      const gp = room.gases?.find((g) => g.key === "co2");
+      if (!gp) return;
 
-    const V_m = Number(gp.flowRate ?? 0); // л/мин
-    const K = Number(gp.usageFactor ?? 1);
-    const t = Number(gp.hoursPerDay ?? 0);
+      const V_m = Number(gp.flowRate ?? 0); // л/мин
+      const K = Number(gp.usageFactor ?? 1);
+      const t = Number(gp.hoursPerDay ?? 0);
 
-    const V_day = V_m * N * K * t * 60; // л/сут
-    totalLPerDay += V_day;
-    totalPoints += N;
+      const V_day = V_m * N * K * t * 60; // л/сут
+      totalLPerDay += V_day;
+      totalPoints += N;
 
-    details.push({ room: room.name || room.key, V_m, N, K, t, V_day });
-  });
+      details.push({ room: room.name || room.key, V_m, N, K, t, V_day });
+    });
+  }
+
 
   // формула для тултипа
   const formulaExpression = details
     .map((d) => `(${d.V_m}×${d.N}×${d.K}×${d.t}×60)`)
     .join(" + ");
 
-  const tooltipDaily = (
+  const tooltipDaily = hasManual ? (
+    <div style={{ maxWidth: 340, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 12 }}>
+        Введено вручную: <b>{manualValue.toLocaleString("ru-RU")} {manualUnit === "day" ? "л/сут" : "л/мин"}</b>
+      </div>
+      <hr style={{ margin: "6px 0", opacity: 0.3 }} />
+      <div style={{ fontSize: 12 }}>
+        {manualUnit === "day"
+          ? <>
+              <b>{manualValue.toLocaleString("ru-RU")} л/сут</b><br/>
+              {manualValue.toLocaleString("ru-RU")} ÷ 1440 = <b>{(manualValue/1440).toLocaleString("ru-RU", {maximumFractionDigits: 2})} л/мин</b>
+            </>
+          : <>{manualValue.toLocaleString("ru-RU")} × 1440 = <b>{totalLPerDay.toLocaleString("ru-RU")} л/сут</b></>
+        }
+      </div>
+    </div>
+  ) : (
     <div style={{ maxWidth: 340, lineHeight: 1.5 }}>
       <div style={{ marginTop: 4 }}>
         {details.map((d, i) => (
@@ -140,8 +178,18 @@ export default function CO2Result({ values, rooms }) {
     </div>
   );
 
+
   // Средние значения
-  const avgLpm = Math.round(totalLPerDay / 1440);
+  let avgLpm;
+  if (hasManual) {
+    if (manualUnit === "day") {
+      avgLpm = +(manualValue / 1440).toFixed(2);
+    } else {
+      avgLpm = manualValue;
+    }
+  } else {
+    avgLpm = Math.round(totalLPerDay / 1440);
+  }
   const pipeData = getPipeDiameter(avgLpm);
   const pipe = pipeData.innerDiameterRounded;
 
@@ -193,9 +241,13 @@ export default function CO2Result({ values, rooms }) {
           <Title level={5} style={{ margin: 0, color: gas.color }}>
             Углекислый газ
           </Title>
-          <Tooltip title="Общее количество точек">
-            <Tag>{totalPoints}</Tag>
-          </Tooltip>
+          {hasManual ? (
+            <Tag color="gold">ручной ввод</Tag>
+          ) : (
+            <Tooltip title="Общее количество точек">
+              <Tag>{totalPoints}</Tag>
+            </Tooltip>
+          )}
         </Space>
       }
       style={{

@@ -49,7 +49,7 @@ function getPipeDiameter(totalLpm) {
   return { innerDiameterRounded, outerDiameter, wallThickness, actualInner };
 }
 
-export default function VacuumResult({ values, rooms }) {
+export default function VacuumResult({ values, rooms, manualTotals, manualUnits }) {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth < 700 : false
   );
@@ -63,7 +63,10 @@ export default function VacuumResult({ values, rooms }) {
   const gas = gases.find((g) => g.key === "vacuum");
 
   // Проверяем, есть ли данные по вакууму
-  const hasData = Object.values(values).some(
+  const manualValue = Number(manualTotals?.vacuum || 0);
+  const manualUnit = manualUnits?.vacuum || "hour";
+  const hasManual = manualValue > 0;
+  const hasData = hasManual || Object.values(values).some(
     (roomData) => Number(roomData?.vacuum) > 0
   );
   if (!hasData) return null;
@@ -72,22 +75,38 @@ export default function VacuumResult({ values, rooms }) {
   let totalPoints = 0;
   const details = [];
 
-  rooms.forEach((room) => {
-    const N = Number(values[room.key]?.vacuum || 0);
-    if (N <= 0) return;
+  if (hasManual) {
+    if (manualUnit === "day") {
+      totalLpm = +(manualValue / 1440).toFixed(2);
+    } else {
+      totalLpm = manualValue;
+    }
+    details.push({
+      room: "Ручной ввод",
+      V_m: manualValue,
+      N: 1,
+      K: 1,
+      V: totalLpm,
+      manualUnit,
+    });
+  } else {
+    rooms.forEach((room) => {
+      const N = Number(values[room.key]?.vacuum || 0);
+      if (N <= 0) return;
 
-    const gp = room.gases?.find((g) => g.key === "vacuum");
-    if (!gp) return;
+      const gp = room.gases?.find((g) => g.key === "vacuum");
+      if (!gp) return;
 
-    const V_m = Number(gp.flowRate ?? 0); // номинальный расход на точку, л/мин
-    const K = Number(gp.usageFactor ?? 0.4); // коэффициент использования (по СП — 0.4)
-    const V = V_m * N * K;
+      const V_m = Number(gp.flowRate ?? 0); // номинальный расход на точку, л/мин
+      const K = Number(gp.usageFactor ?? 0.4); // коэффициент использования (по СП — 0.4)
+      const V = V_m * N * K;
 
-    totalLpm += V;
-    totalPoints += N;
+      totalLpm += V;
+      totalPoints += N;
 
-    details.push({ room: room.name || room.key, V_m, N, K, V });
-  });
+      details.push({ room: room.name || room.key, V_m, N, K, V });
+    });
+  }
 
   // Перевод в м³/ч
   const totalM3ph = (totalLpm / 1000) * 60;
@@ -95,7 +114,27 @@ export default function VacuumResult({ values, rooms }) {
   const pipe = pipeData.innerDiameterRounded;
 
   // тултип с формулами
-  const tooltipDetails = (
+  const tooltipDetails = hasManual ? (
+    <div style={{ maxWidth: 340, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 12 }}>
+        Введено вручную: <b>{manualValue.toLocaleString("ru-RU")} {manualUnit === "day" ? "л/сут" : "л/мин"}</b>
+      </div>
+      <hr style={{ margin: "6px 0", opacity: 0.3 }} />
+      <div style={{ fontSize: 12 }}>
+        {manualUnit === "day"
+          ? <>
+              <b>{manualValue.toLocaleString("ru-RU")} л/сут</b><br/>
+              {manualValue.toLocaleString("ru-RU")} ÷ 1440 = <b>{(manualValue/1440).toLocaleString("ru-RU", {maximumFractionDigits: 2})} л/мин</b>
+            </>
+          : <>{manualValue.toLocaleString("ru-RU")} л/мин</>}
+      </div>
+      <hr style={{ margin: "6px 0", opacity: 0.3 }} />
+      <div style={{ fontSize: 12 }}>
+        Σ&nbsp;=&nbsp;<b>{Math.round(totalLpm)} л/мин</b> ={" "}
+        <b>{totalM3ph.toFixed(2)} м³/ч</b>
+      </div>
+    </div>
+  ) : (
     <div style={{ maxWidth: 340, lineHeight: 1.5 }}>
       {details.map((d, i) => (
         <div
@@ -175,9 +214,13 @@ export default function VacuumResult({ values, rooms }) {
           <Title level={5} style={{ margin: 0, color: gas.color }}>
             Вакуум
           </Title>
-          <Tooltip title="Общее количество точек">
-            <Tag>{totalPoints}</Tag>
-          </Tooltip>
+          {hasManual ? (
+            <Tag color="gold">ручной ввод</Tag>
+          ) : (
+            <Tooltip title="Общее количество точек">
+              <Tag>{totalPoints}</Tag>
+            </Tooltip>
+          )}
         </Space>
       }
       style={{

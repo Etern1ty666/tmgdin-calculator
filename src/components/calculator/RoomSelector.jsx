@@ -46,7 +46,6 @@ export default function RoomSelector({ rooms, selectedRooms, onChange }) {
         mode="multiple"
         allowClear
         showSearch
-        size="small"
         style={{ width: "100%", textAlign: "left" }}
         placeholder="Выберите помещения..."
         value={selectedRooms}

@@ -112,6 +112,19 @@ export const gases = [
   usageFactor - Средний коэффициент использования
 */
 export const rooms = [
+      { type: "row", key: "dental", name: "Стоматологический кабинет",
+    gases: [
+      {key: 'oxygen', flowRate: 10, hoursPerDay: 5, usageFactor: 0.4 },
+      {key: 'n2o', flowRate: 6, hoursPerDay: 5, usageFactor: 0.4 },
+
+      {key: 'vacuum', flowRate: 20, usageFactor: 0.3},
+      {key: 'air5', flowRate: 10, usageFactor: 0.4},
+      {key: 'air8', flowRate: 10, usageFactor: 0.4},
+
+      {key: 'co2', flowRate: 13, hoursPerDay: 1 },
+      {key: 'agss', },
+    ]
+  },
   { type: "row", key: "operating", name: "Операционные",
     gases: [
       {key: 'oxygen', flowRate: 20, hoursPerDay: 5, usageFactor: 0.7 },
@@ -136,6 +149,20 @@ export const rooms = [
       {key: 'air8', flowRate: 40, usageFactor: 0.4},
       {key: 'co2', flowRate: 13, hoursPerDay: 1 },
       {key: 'agss', },
+
+    ]
+  },
+  { type: "row", key: "operating_small_clinic", name: "Операционные для малых клиник",
+    gases: [
+      {key: 'oxygen', flowRate: 5, hoursPerDay: 5, usageFactor: 0.7 },
+      {key: 'n2o', flowRate: 6, hoursPerDay: 5, usageFactor: 0.7 },
+
+      {key: 'vacuum', flowRate: 40, usageFactor: 0.7 },
+      {key: 'air5', flowRate: 10, usageFactor: 0.7 },
+      {key: 'air8', flowRate: 10, usageFactor: 0.7 },
+      {key: 'co2', flowRate: 13, hoursPerDay: 1 },
+      {key: 'agss', },
+
 
     ]
   },
@@ -319,8 +346,22 @@ export const rooms = [
       {key: 'oxygen', flowRate: 4, hoursPerDay: 1.5, usageFactor: 0.3 },
       {key: 'vacuum', flowRate: 10, usageFactor: 0.3},
 
+      {key: 'air5', flowRate: 10, usageFactor: 0.8 },
+      {key: 'agss', },
+
     ]
   },
+
+  { type: "row", key: "general_small", name: "Палаты для малых клиник",
+    gases: [
+      {key: 'oxygen', flowRate: 2, hoursPerDay: 1.5, usageFactor: 0.3 },
+      {key: 'vacuum', flowRate: 10, usageFactor: 0.3},
+
+      {key: 'air5', flowRate: 10, usageFactor: 0.8 },
+      {key: 'agss', },
+    ]
+  },
+
   { type: "row", key: "premature", name: "Отделения выхаживания недоношенных детей",
     gases: [
       {key: 'oxygen', flowRate: 2, hoursPerDay: 24, usageFactor: 0.8 },
@@ -355,5 +396,6 @@ export const rooms = [
 
     ]
   },
+
 ];
 

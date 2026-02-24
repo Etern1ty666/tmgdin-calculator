@@ -49,7 +49,7 @@ function getPipeDiameter(totalLpm) {
   return { innerDiameterRounded, outerDiameter, wallThickness, actualInner };
 }
 
-export default function AirResult({ values, rooms }) {
+export default function AirResult({ values, rooms, manualTotals, manualUnits }) {
   const gasAir5 = gases.find((g) => g.key === "air5");
   const gasAir8 = gases.find((g) => g.key === "air8");
   const gasAgss = gases.find((g) => g.key === "agss");
@@ -65,7 +65,14 @@ export default function AirResult({ values, rooms }) {
     };
   }, []);
 
-  const hasData = Object.values(values).some(
+  const manualAir5 = Number(manualTotals?.air5 || 0);
+  const manualAir8 = Number(manualTotals?.air8 || 0);
+  const manualAgss = Number(manualTotals?.agss || 0);
+  const manualUnitAir5 = manualUnits?.air5 || "hour";
+  const manualUnitAir8 = manualUnits?.air8 || "hour";
+  const manualUnitAgss = manualUnits?.agss || "hour";
+  const hasManual = manualAir5 > 0 || manualAir8 > 0 || manualAgss > 0;
+  const hasData = hasManual || Object.values(values).some(
     (roomData) =>
       Number(roomData?.air5) > 0 ||
       Number(roomData?.air8) > 0 ||
@@ -82,59 +89,106 @@ export default function AirResult({ values, rooms }) {
   let agssPoints = 0;
   const details = [];
 
-  rooms.forEach((room) => {
-    const N5 = Number(values[room.key]?.air5 || 0);
-    const N8 = Number(values[room.key]?.air8 || 0);
-    const Nagss = Number(values[room.key]?.agss || 0);
-
-    if (N5 + N8 + Nagss <= 0) return;
-
-    const gp5 = room.gases?.find((g) => g.key === "air5");
-    const gp8 = room.gases?.find((g) => g.key === "air8");
-
-    if (N5 > 0 && gp5) {
-      const V_m = gp5.flowRate ?? 0;
-      const K = gp5.usageFactor ?? 1;
-      const V = V_m * N5 * K;
-      totalAir5_Lpm += V;
+  if (hasManual) {
+    // Air5
+    if (manualAir5 > 0) {
+      let valLpm = manualUnitAir5 === "day" ? +(manualAir5 / 1440).toFixed(2) : manualAir5;
+      totalAir5_Lpm = valLpm;
       details.push({
-        room: room.name,
+        room: "Ручной ввод",
         type: "Air5",
-        formula: `${V_m}×${N5}×${K}`,
-        value: V,
+        formula: manualUnitAir5 === "day"
+          ? `${manualAir5} л/сут ÷ 1440 = ${valLpm} л/мин`
+          : `${manualAir5} л/мин`,
+        value: valLpm,
       });
-      totalPoints += N5;
-      air5Points += N5;
+      air5Points = 1;
     }
-
-    if (N8 > 0 && gp8) {
-      const K = gp8.usageFactor ?? 1;
-      const V = 350 * N8 * K;
-      totalAir8_Lpm += V;
+    // Air8
+    if (manualAir8 > 0) {
+      let valLpm = manualUnitAir8 === "day" ? +(manualAir8 / 1440).toFixed(2) : manualAir8;
+      totalAir8_Lpm = valLpm;
       details.push({
-        room: room.name,
+        room: "Ручной ввод",
         type: "Air8",
-        formula: `350×${N8}×${K}`,
-        value: V,
+        formula: manualUnitAir8 === "day"
+          ? `${manualAir8} л/сут ÷ 1440 = ${valLpm} л/мин`
+          : `${manualAir8} л/мин`,
+        value: valLpm,
       });
-      totalPoints += N8;
-      air8Points += N8;
+      air8Points = 1;
     }
-
-    // AGSS: 1 точка = 3 м³/ч
-    if (Nagss > 0) {
-      const V = Nagss * 3; // м³/ч
-      totalAgss_M3ph += V;
+    // AGSS
+    if (manualAgss > 0) {
+      let valLpm = manualUnitAgss === "day" ? +(manualAgss / 1440).toFixed(2) : manualAgss;
+      // AGSS: л/мин -> м³/ч (valLpm * 60 / 1000)
+      let valM3ph = (valLpm * 60) / 1000;
+      totalAgss_M3ph = valM3ph;
       details.push({
-        room: room.name,
+        room: "Ручной ввод",
         type: "AGSS",
-        formula: `${Nagss}×3`,
-        value: V,
+        formula: manualUnitAgss === "day"
+          ? `${manualAgss} л/сут ÷ 1440 = ${valLpm} л/мин → ${valM3ph.toFixed(2)} м³/ч`
+          : `${manualAgss} л/мин → ${valM3ph.toFixed(2)} м³/ч`,
+        value: valM3ph,
       });
-      totalPoints += Nagss;
-      agssPoints += Nagss;
+      agssPoints = 1;
     }
-  });
+  } else {
+    rooms.forEach((room) => {
+      const N5 = Number(values[room.key]?.air5 || 0);
+      const N8 = Number(values[room.key]?.air8 || 0);
+      const Nagss = Number(values[room.key]?.agss || 0);
+
+      if (N5 + N8 + Nagss <= 0) return;
+
+      const gp5 = room.gases?.find((g) => g.key === "air5");
+      const gp8 = room.gases?.find((g) => g.key === "air8");
+
+      if (N5 > 0 && gp5) {
+        const V_m = gp5.flowRate ?? 0;
+        const K = gp5.usageFactor ?? 1;
+        const V = V_m * N5 * K;
+        totalAir5_Lpm += V;
+        details.push({
+          room: room.name,
+          type: "Air5",
+          formula: `${V_m}×${N5}×${K}`,
+          value: V,
+        });
+        totalPoints += N5;
+        air5Points += N5;
+      }
+
+      if (N8 > 0 && gp8) {
+        const K = gp8.usageFactor ?? 1;
+        const V = 350 * N8 * K;
+        totalAir8_Lpm += V;
+        details.push({
+          room: room.name,
+          type: "Air8",
+          formula: `350×${N8}×${K}`,
+          value: V,
+        });
+        totalPoints += N8;
+        air8Points += N8;
+      }
+
+      // AGSS: 1 точка = 3 м³/ч
+      if (Nagss > 0) {
+        const V = Nagss * 3; // м³/ч
+        totalAgss_M3ph += V;
+        details.push({
+          room: room.name,
+          type: "AGSS",
+          formula: `${Nagss}×3`,
+          value: V,
+        });
+        totalPoints += Nagss;
+        agssPoints += Nagss;
+      }
+    });
+  }
 
   // Пересчёты: общие значения в л/мин и перевод AGSS из м³/ч → л/мин
   const totalAir_Lpm = totalAir5_Lpm + totalAir8_Lpm;
@@ -293,9 +347,13 @@ export default function AirResult({ values, rooms }) {
             </Space>
           )}
 
-          <Tooltip title="Общее количество точек">
-            <Tag>{totalPoints}</Tag>
-          </Tooltip>
+          {hasManual ? (
+            <Tag color="gold">ручной ввод</Tag>
+          ) : (
+            <Tooltip title="Общее количество точек">
+              <Tag>{totalPoints}</Tag>
+            </Tooltip>
+          )}
         </Space>
       }
       style={{

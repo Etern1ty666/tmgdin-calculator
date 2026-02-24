@@ -7,6 +7,7 @@ import * as XLSX from "xlsx";
 import GasSelector from "../components/calculator/GasSelector";
 import CalculatorTable from "../components/calculator/CalculatorTable";
 import RoomSelector from "../components/calculator/RoomSelector";
+import { CalculatorPageLayout, CalculatorCenteredBlock } from "../components/calculator/CalculatorLayout";
 import OxygenResult from "../components/calculator/sections/OxygenResult";
 import N2OResult from "../components/calculator/sections/N2OResult";
 import AirResult from "../components/calculator/sections/AirResult";
@@ -772,16 +773,9 @@ export default observer(function Calculator() {
   };
 
   return (
-    <div
-      style={{
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        gap: 16,
-      }}
-    >
+    <CalculatorPageLayout>
       {/* ======== ВЫБОР ГАЗОВ ======== */}
-      <div style={{ width: "100%", maxWidth: 630, margin: "0 auto" }}>
+      <CalculatorCenteredBlock>
         <GasSelector
           gases={store.gases}
           selectedGases={selectedGases}
@@ -817,16 +811,16 @@ export default observer(function Calculator() {
             });
           }}
         />
-      </div>
+      </CalculatorCenteredBlock>
 
       {/* ======== ВЫБОР ПОМЕЩЕНИЙ ======== */}
-      <div style={{ width: "100%", maxWidth: 630, margin: "0 auto" }}>
+      <CalculatorCenteredBlock>
         <RoomSelector
           rooms={store.rooms}
           selectedRooms={selectedRooms}
           onChange={handleSelectRooms}
         />
-      </div>
+      </CalculatorCenteredBlock>
 
       {/* ======== ТАБЛИЦА ИЛИ СООБЩЕНИЕ ======== */}
       {showEmptyState ? (
@@ -944,6 +938,6 @@ export default observer(function Calculator() {
           )}
         </Flex>
       )}
-    </div>
+    </CalculatorPageLayout>
   );
 });

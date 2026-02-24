@@ -50,7 +50,7 @@ export default observer(function SettingsLayout() {
   
   // Determine initial viewport for mobile-first behavior
   const initialMobile = typeof window !== "undefined" ? window.innerWidth < 700 : false;
-  const [activeKey, setActiveKey] = useState(initialMobile ? "" : (urlTab || "gases"));
+  const [activeKey, setActiveKey] = useState(initialMobile ? "" : (urlTab || "appearance"));
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [importPreview, setImportPreview] = useState(null);
   const [pendingImportData, setPendingImportData] = useState(null);
@@ -139,11 +139,12 @@ export default observer(function SettingsLayout() {
   // persistence now handled by MobX store (appStore)
 
   // ========== МЕНЮ ==========
+  // Разделы "Газы" и "Помещения" временно отключены для предотвращения случайных изменений
   const menuItems = [
-    { key: "gases", icon: <ExperimentOutlined />, label: "Газы" },
-    { key: "rooms", icon: <HomeOutlined />, label: "Помещения" },
+    // { key: "gases", icon: <ExperimentOutlined />, label: "Газы" },
+    // { key: "rooms", icon: <HomeOutlined />, label: "Помещения" },
     { key: "appearance", icon: <BgColorsOutlined />, label: "Оформление" },
-        { key: "export", icon: <SwapOutlined />, label: "Перенос" },
+    //{ key: "export", icon: <SwapOutlined />, label: "Перенос" },
     { key: "about", icon: <InfoCircleOutlined />, label: "О приложении" },
   ];
 
@@ -155,30 +156,32 @@ export default observer(function SettingsLayout() {
   );
 
   // === Новый macOS стиль для газов ===
-  const renderGases = () => (
-    <GasSettingsPanel
-      gases={store.gases}
-      setGases={(g) => store.setGases(g)}
-      changed={gasesChanged}
-      onDetailChange={(v) => setGasDetailOpen(!!v)}
-      onReset={() => {
-        store.setGases(gasesData);
-        if (typeof store.resetGases === "function") store.resetGases();
-        message.success("Настройки газов сброшены!");
-      }}
-    />
-  );
+  // Раздел "Газы" временно отключён (код сохранён для возможного возврата)
+  // const renderGases = () => (
+  //   <GasSettingsPanel
+  //     gases={store.gases}
+  //     setGases={(g) => store.setGases(g)}
+  //     changed={gasesChanged}
+  //     onDetailChange={(v) => setGasDetailOpen(!!v)}
+  //     onReset={() => {
+  //       store.setGases(gasesData);
+  //       if (typeof store.resetGases === "function") store.resetGases();
+  //       message.success("Настройки газов сброшены!");
+  //     }}
+  //   />
+  // );
 
-  const renderRooms = () => (
-    <RoomsSettingsPanel
-      changed={roomsChanged}
-      onDetailChange={(v) => setRoomDetailOpen(!!v)}
-      onReset={() => {
-        store.setRooms(roomsData);
-        message.success("Настройки помещений сброшены!");
-      }}
-    />
-  );
+  // Раздел "Помещения" временно отключён (код сохранён для возможного возврата)
+  // const renderRooms = () => (
+  //   <RoomsSettingsPanel
+  //     changed={roomsChanged}
+  //     onDetailChange={(v) => setRoomDetailOpen(!!v)}
+  //     onReset={() => {
+  //       store.setRooms(roomsData);
+  //       message.success("Настройки помещений сброшены!");
+  //     }}
+  //   />
+  // );
 
   const renderExport = () => (
     <>
@@ -381,6 +384,71 @@ export default observer(function SettingsLayout() {
       >
         <div style={{ marginBottom: 12 }}>
           <Title level={5} style={{ margin: 0, marginBottom: 4 }}>
+            Версия 0.2.0
+          </Title>
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            24 февраля 2026
+          </Text>
+        </div>
+        <Divider style={{ margin: '12px 0' }} />
+        <div style={{ textAlign: 'left' }}>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>
+            Что нового:
+          </Text>
+          <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.8 }}>
+            <li>В палаты на 1-2 койки добавлены:
+              <ul>
+                <li>Air 5 — 10 л/мин</li>
+                <li>AGSS — система удаления анестетиков</li>
+              </ul>
+            </li>
+            <li>Добавлено 3 новых помещения:
+              <ul>
+                <li>
+                  <b>Палаты для малых клиник:</b><br />
+                  Кислород — 2 л/мин, 1.5 ч/сут, коэф. использования 0.3<br />
+                  Вакуум — 10 л/мин, коэф. использования 0.3<br />
+                  Air 5 — 10 л/мин, коэф. использования 0.8<br />
+                  AGSS — система удаления анестетиков
+                </li>
+                <li>
+                  <b>Операционные для малых клиник:</b><br />
+                  Кислород — 5 л/мин, 5 ч/сут, коэф. использования 0.7<br />
+                  Закись азота — 6 л/мин, 5 ч/сут, коэф. использования 0.7<br />
+                  Вакуум — 40 л/мин, коэф. использования 0.7<br />
+                  Air 5 — 10 л/мин, коэф. использования 0.7<br />
+                  Air 8 — 10 л/мин, коэф. использования 0.7<br />
+                  CO₂ — 13 л/мин, 1 ч/сут<br />
+                  AGSS — система удаления анестетиков
+                </li>
+                <li>
+                  <b>Стоматологический кабинет:</b><br />
+                  Кислород — 10 л/мин, 5 ч/сут, коэф. использования 0.4<br />
+                  Закись азота — 6 л/мин, 5 ч/сут, коэф. использования 0.4<br />
+                  Вакуум — 20 л/мин, коэф. использования 0.3<br />
+                  Air 5 — 10 л/мин, коэф. использования 0.4<br />
+                  Air 8 — 10 л/мин, коэф. использования 0.4<br />
+                  CO₂ — 13 л/мин, 1 ч/сут<br />
+                  AGSS — система удаления анестетиков
+                </li>
+              </ul>
+            </li>
+            <li>Убрана возможность вручную изменять настройки газов и помещений</li>
+            <li>Добавлен новый тип калькулятора — ручной ввод: достаточно указать общий расход по конкретному газу, чтобы получить расчет</li>
+            <li>В документации теперь первым делом отображаются таблицы с параметрами помещений по каждому газу</li>
+          </ul>
+        </div>
+      </Card>
+
+      <Card
+        style={{
+          marginBottom: 24,
+          borderRadius: 12,
+          background: token.colorBgContainer,
+        }}
+      >
+        <div style={{ marginBottom: 12 }}>
+          <Title level={5} style={{ margin: 0, marginBottom: 4 }}>
             Версия 0.1.1
           </Title>
           <Text type="secondary" style={{ fontSize: 13 }}>
@@ -407,7 +475,7 @@ export default observer(function SettingsLayout() {
       {/* Version at bottom */}
       <div style={{ textAlign: 'center', marginTop: 32, paddingTop: 16, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          Версия <b>0.1.1</b>
+          Версия <b>0.2.0</b>
         </Text>
       </div>
     </>
@@ -421,11 +489,23 @@ export default observer(function SettingsLayout() {
       case "appearance":
         return renderAppearance();
       case "gases":
-        return renderGases();
+          return (
+            <>
+              {/* {renderGases()} */}
+            </>
+          );
       case "rooms":
-        return renderRooms();
+          return (
+            <>
+              {/* {renderRooms()} */}
+            </>
+          );
       case "export":
-        return renderExport();
+        return (
+          <>
+              {/* {renderExport()} */}
+            </>
+        );
       case "about":
         return renderAbout();
       default:

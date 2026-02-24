@@ -24,6 +24,9 @@ export default function Air5Section() {
         </span>
       }
     >
+      {/* --- Таблица параметров --- */}
+      <GasDocsTable gasKey="air5" />
+      <Divider />
       {/* 1. Область применения */}
       <Paragraph>
         <Text strong>Область применения:</Text> сжатый воздух 0.4 МПа (Air 5)

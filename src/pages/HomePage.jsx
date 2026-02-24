@@ -129,14 +129,19 @@ export default function HomePage() {
               shape='round'
               onClick={() => navigate("/settings?tab=about")}
               style={{
-                padding: "0 32px",
+                padding: "0 40px",
                 height: 56,
-                fontSize: 16,
+                fontSize: 18,
                 borderColor: token.colorPrimary,
                 color: token.colorPrimary,
+                width: '100%',
+                maxWidth: 240,
+                minWidth: 180,
+                margin: '0 auto',
+                display: 'block',
               }}
             >
-              Обновление 0.1.1
+              Обновление 0.2.0
             </Button>
           </motion.div>
         </Space>

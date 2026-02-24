@@ -32,6 +32,9 @@ export default function AgssSection() {
         </span>
       }
     >
+      {/* --- Таблица параметров --- */}
+      <GasDocsTable gasKey="agss" />
+      <Divider />
       {/* --- 1. Область применения --- */}
       <Paragraph>
         <Text strong>Область применения:</Text> система удаления анестетических

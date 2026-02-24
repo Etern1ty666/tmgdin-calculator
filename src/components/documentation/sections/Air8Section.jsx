@@ -24,6 +24,9 @@ export default function Air8Section() {
         </span>
       }
     >
+      {/* --- Таблица параметров --- */}
+      <GasDocsTable gasKey="air8" />
+      <Divider />
       {/* 1. Область применения */}
       <Paragraph>
         <Text strong>Область применения:</Text> сжатый воздух 0.8 МПа (Air 8)

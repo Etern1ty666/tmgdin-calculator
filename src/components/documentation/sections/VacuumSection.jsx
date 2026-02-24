@@ -32,6 +32,9 @@ export default function VacuumSection() {
         </span>
       }
     >
+      {/* --- Таблица параметров --- */}
+      <GasDocsTable gasKey="vacuum" />
+      <Divider />
       {/* --- 1. Область применения --- */}
       <Paragraph>
         <Text strong>Область применения:</Text> вакуум используется для создания

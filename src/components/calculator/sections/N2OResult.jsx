@@ -52,7 +52,7 @@ function getPipeDiameter(totalLpm) {
   return { innerDiameterRounded, outerDiameter, wallThickness, actualInner };
 }
 
-export default function N2OResult({ values, rooms }) {
+export default function N2OResult({ values, rooms, manualTotals, manualUnits }) {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth < 700 : false
   );
@@ -66,7 +66,10 @@ export default function N2OResult({ values, rooms }) {
   const gas = gases.find((g) => g.key === "n2o"); // берём цвет/иконку/название из data
 
   // есть ли вообще вводы по N2O
-  const hasData = Object.values(values).some(
+  const manualValue = Number(manualTotals?.n2o || 0);
+  const manualUnit = manualUnits?.n2o || "hour";
+  const hasManual = manualValue > 0;
+  const hasData = hasManual || Object.values(values).some(
     (roomData) => Number(roomData?.n2o) > 0
   );
   if (!hasData) return null;
@@ -77,76 +80,118 @@ export default function N2OResult({ values, rooms }) {
   // для наглядного тултипа с общей формулой
   const details = [];
 
-  rooms.forEach((room) => {
-    const N = Number(values[room.key]?.n2o || 0); // точек N2O в помещении (из ввода)
-    if (N <= 0) return;
+  if (hasManual) {
+    if (manualUnit === "day") {
+      totalLPerDay = manualValue;
+    } else {
+      totalLPerDay = manualValue * 1440;
+    }
+    details.push({
+      room: "Ручной ввод",
+      V_m: manualValue,
+      N: 1,
+      K: 1,
+      t: manualUnit === "day" ? 24 : 24,
+      V_day: totalLPerDay,
+      manualUnit,
+    });
+  } else {
+    rooms.forEach((room) => {
+      const N = Number(values[room.key]?.n2o || 0); // точек N2O в помещении (из ввода)
+      if (N <= 0) return;
 
-    const gp = room.gases?.find((g) => g.key === "n2o");
-    if (!gp) return;
+      const gp = room.gases?.find((g) => g.key === "n2o");
+      if (!gp) return;
 
-    const V_m = Number(gp.flowRate ?? 0);     // л/мин
-    const K   = Number(gp.usageFactor ?? 1);  // —
-    const t   = Number(gp.hoursPerDay ?? 0);  // ч/сут
+      const V_m = Number(gp.flowRate ?? 0);     // л/мин
+      const K   = Number(gp.usageFactor ?? 1);  // —
+      const t   = Number(gp.hoursPerDay ?? 0);  // ч/сут
 
-    const V_day = V_m * N * K * t * 60;       // л/сут
-    totalLPerDay += V_day;
-    totalPoints  += N;
+      const V_day = V_m * N * K * t * 60;       // л/сут
+      totalLPerDay += V_day;
+      totalPoints  += N;
 
-    details.push({ room: room.name || room.key, V_m, N, K, t, V_day });
-  });
+      details.push({ room: room.name || room.key, V_m, N, K, t, V_day });
+    });
+  }
 
   // формула-сумма для тултипа
   const formulaExpression = details
     .map((d) => `(${d.V_m}×${d.N}×${d.K}×${d.t}×60)`)
     .join(" + ");
 
-  const tooltipDaily = (
-  <div style={{ maxWidth: 340, lineHeight: 1.5 }}>
-    <div style={{ marginTop: 4 }}>
-      {details.map((d, i) => (
-        <div key={i}>
-          <div
-            style={{
-              fontSize: 12,
-              color: "#555",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            <div
-              style={{
-                flex: 1,
-                overflow: "hidden",
-                whiteSpace: "nowrap",
-                textOverflow: "ellipsis",
-                maxWidth: 200,
-              }}
-              title={d.room}
-            >
-              {d.room}
-            </div>
-            <div style={{ flexShrink: 0, fontWeight: 500 }}>
-              {Math.round(d.V_day).toLocaleString("ru-RU")} л/сут
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-    <hr style={{ margin: "6px 0", opacity: 0.3 }} />
-    <div style={{ fontSize: 12 }}>
-      <div>
-        {formulaExpression} ={" "}
-        <b>{Math.round(totalLPerDay).toLocaleString("ru-RU")} л/сут</b>
+  const tooltipDaily = hasManual ? (
+    <div style={{ maxWidth: 340, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 12 }}>
+        Введено вручную: <b>{manualValue.toLocaleString("ru-RU")} {manualUnit === "day" ? "л/сут" : "л/мин"}</b>
+      </div>
+      <hr style={{ margin: "6px 0", opacity: 0.3 }} />
+      <div style={{ fontSize: 12 }}>
+        {manualUnit === "day"
+          ? <>
+              <b>{manualValue.toLocaleString("ru-RU")} л/сут</b><br/>
+              {manualValue.toLocaleString("ru-RU")} ÷ 1440 = <b>{(manualValue/1440).toLocaleString("ru-RU", {maximumFractionDigits: 2})} л/мин</b>
+            </>
+          : <>{manualValue.toLocaleString("ru-RU")} × 1440 = <b>{totalLPerDay.toLocaleString("ru-RU")} л/сут</b></>
+        }
       </div>
     </div>
-  </div>
-);
+  ) : (
+    <div style={{ maxWidth: 340, lineHeight: 1.5 }}>
+      <div style={{ marginTop: 4 }}>
+        {details.map((d, i) => (
+          <div key={i}>
+            <div
+              style={{
+                fontSize: 12,
+                color: "#555",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <div
+                style={{
+                  flex: 1,
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  textOverflow: "ellipsis",
+                  maxWidth: 200,
+                }}
+                title={d.room}
+              >
+                {d.room}
+              </div>
+              <div style={{ flexShrink: 0, fontWeight: 500 }}>
+                {Math.round(d.V_day).toLocaleString("ru-RU")} л/сут
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <hr style={{ margin: "6px 0", opacity: 0.3 }} />
+      <div style={{ fontSize: 12 }}>
+        <div>
+          {formulaExpression} ={" "}
+          <b>{Math.round(totalLPerDay).toLocaleString("ru-RU")} л/сут</b>
+        </div>
+      </div>
+    </div>
+  );
 
 
   // усреднённые показатели
-  const avgLpm = Math.round(totalLPerDay / 1440); // л/мин
+  let avgLpm;
+  if (hasManual) {
+    if (manualUnit === "day") {
+      avgLpm = +(manualValue / 1440).toFixed(2);
+    } else {
+      avgLpm = manualValue;
+    }
+  } else {
+    avgLpm = Math.round(totalLPerDay / 1440);
+  }
   const pipeData = getPipeDiameter(avgLpm);
   const pipe = pipeData.innerDiameterRounded;
 
@@ -186,9 +231,13 @@ export default function N2OResult({ values, rooms }) {
           <Title level={5} style={{ margin: 0, color: gas.color }}>
             {"Закись азота"}
           </Title>
-          <Tooltip title={"Общее количество точек"}>
-          <Tag>{totalPoints}</Tag>
-          </Tooltip>
+          {hasManual ? (
+            <Tag color="gold">ручной ввод</Tag>
+          ) : (
+            <Tooltip title={"Общее количество точек"}>
+              <Tag>{totalPoints}</Tag>
+            </Tooltip>
+          )}
         </Space>
       }
       style={{
