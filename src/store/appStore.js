@@ -2,9 +2,7 @@ import { makeAutoObservable, runInAction, observable } from "mobx";
 import { autorun } from "mobx";
 import { gases as defaultGases, rooms as defaultRooms } from "../data";
 
-const GASES_STORAGE_KEY = "gases-settings";
-const THEME_STORAGE_KEY = "app-theme";
-const ROOMS_STORAGE_KEY = "rooms-settings";
+
 
 class AppStore {
   gases = [];
@@ -16,25 +14,12 @@ class AppStore {
     // are not converted to observable proxies. We always replace items immutably.
     makeAutoObservable(this, { gases: observable.shallow });
 
-    // initialize from defaults then merge persisted values
+
+    // initialize from defaults only
     this.gases = defaultGases.map((d) => ({ ...d }));
     this.rooms = defaultRooms.map((r) => ({ ...r }));
 
-    try {
-      const raw = localStorage.getItem(GASES_STORAGE_KEY);
-      if (raw) {
-        const saved = JSON.parse(raw);
-        if (Array.isArray(saved)) {
-          this.gases = defaultGases.map((d) => ({
-            ...d,
-            ...(saved.find((x) => x.key === d.key) || {}),
-          }));
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-
+    // Ensure each gas has linkedRooms set (derived from defaultRooms if present)
     // Ensure each gas has linkedRooms set (derived from defaultRooms if present)
     try {
       const defaultRoomMap = new Map(defaultRooms.map((r) => [r.key, r]));
@@ -51,49 +36,9 @@ class AppStore {
       // ignore
     }
 
-    try {
-      const t = localStorage.getItem(THEME_STORAGE_KEY);
-      if (t) this.theme = t;
-    } catch (e) {}
 
-    try {
-      const rawRooms = localStorage.getItem(ROOMS_STORAGE_KEY);
-      if (rawRooms) {
-        const parsed = JSON.parse(rawRooms);
-        if (Array.isArray(parsed)) this.rooms = parsed;
-      }
-    } catch (e) {}
 
-    // persist serializable parts of gases and theme/rooms
-    autorun(() => {
-      try {
-        const toSave = this.gases.map((g) => ({
-          key: g.key,
-          color: g.color,
-          ...(g.label !== undefined ? { label: g.label } : {}),
-          ...(g.shortName !== undefined ? { shortName: g.shortName } : {}),
-          ...(g.linkedRooms !== undefined ? { linkedRooms: g.linkedRooms } : {}),
-          ...(g.flowRate !== undefined ? { flowRate: g.flowRate } : {}),
-          ...(g.hoursPerDay !== undefined ? { hoursPerDay: g.hoursPerDay } : {}),
-          ...(g.usageFactor !== undefined ? { usageFactor: g.usageFactor } : {}),
-        }));
-        localStorage.setItem(GASES_STORAGE_KEY, JSON.stringify(toSave));
-      } catch (e) {
-        // ignore
-      }
-    });
 
-    autorun(() => {
-      try {
-        localStorage.setItem(THEME_STORAGE_KEY, this.theme);
-      } catch (e) {}
-    });
-
-    autorun(() => {
-      try {
-        localStorage.setItem(ROOMS_STORAGE_KEY, JSON.stringify(this.rooms));
-      } catch (e) {}
-    });
   }
 
   setTheme(t) {
@@ -174,16 +119,10 @@ class AppStore {
 
   resetRooms() {
     this.rooms = defaultRooms.map((r) => ({ ...r }));
-    try {
-      localStorage.removeItem(ROOMS_STORAGE_KEY);
-    } catch (e) {}
   }
 
   resetGases() {
     this.gases = defaultGases.map((d) => ({ ...d }));
-    try {
-      localStorage.removeItem(GASES_STORAGE_KEY);
-    } catch (e) {}
   }
 
   // Room-level operations
@@ -208,9 +147,7 @@ class AppStore {
 
   resetRooms() {
     this.rooms = defaultRooms.map((r) => ({ ...r }));
-    try {
-      localStorage.removeItem(ROOMS_STORAGE_KEY);
-    } catch (e) {}
+    // localStorage.removeItem(ROOMS_STORAGE_KEY) удалён, теперь не используется
   }
 
   removeRoom(roomKey) {
