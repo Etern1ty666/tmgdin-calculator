@@ -190,12 +190,20 @@ export default function AirResult({ values, rooms, manualTotals, manualUnits }) 
     });
   }
 
-  // Пересчёты: общие значения в л/мин и перевод AGSS из м³/ч → л/мин
-  const totalAir_Lpm = totalAir5_Lpm + totalAir8_Lpm;
-  const totalAgss_Lpm = (totalAgss_M3ph * 1000) / 60; // м³/ч -> л/мин
-  const totalWithAgss_Lpm = totalAir_Lpm + totalAgss_Lpm;
-  const pipeData = getPipeDiameter(totalWithAgss_Lpm);
-  const pipe = pipeData.innerDiameterRounded;
+const totalAgss_Lpm = (totalAgss_M3ph * 1000) / 60;
+
+const pipeAir5 =
+  totalAir5_Lpm > 0 ? getPipeDiameter(totalAir5_Lpm) : null;
+
+const pipeAir8 =
+  totalAir8_Lpm > 0 ? getPipeDiameter(totalAir8_Lpm) : null;
+
+const pipeAgss =
+  totalAgss_Lpm > 0 ? getPipeDiameter(totalAgss_Lpm) : null;
+
+const totalAir_Lpm = totalAir5_Lpm + totalAir8_Lpm;
+const totalWithAgss_Lpm = totalAir_Lpm + totalAgss_Lpm;
+
 
   const tooltipDetails = (
     <div style={{ maxWidth: 360, lineHeight: 1.5 }}>
@@ -388,12 +396,44 @@ export default function AirResult({ values, rooms, manualTotals, manualUnits }) 
           </Tooltip>
         </Text>
 
-        <Text>
-          <b>Необходимая труба:</b>{" "}
-          <Tooltip title={`Внутренний диаметр: ${pipeData.innerDiameterRounded} мм\nНаружный диаметр: ${parseFloat((pipeData.innerDiameterRounded + 2).toFixed(2))} мм\nТолщина стенки: ${pipeData.wallThickness} мм`}>
-            <Tag color="blue">⌀{pipeData.outerDiameter}</Tag>
-          </Tooltip>
-        </Text>
+        {pipeAir5 && (
+          <Text>
+            <b>Труба Air 5:</b>{" "}
+            <Tooltip
+              title={`Внутренний: ${pipeAir5.innerDiameterRounded} мм
+        Наружный: ${pipeAir5.outerDiameter} мм
+        Стенка: ${pipeAir5.wallThickness} мм`}
+            >
+              <Tag color={gasAir5.color}>⌀{pipeAir5.outerDiameter}</Tag>
+            </Tooltip>
+          </Text>
+        )}
+
+        {pipeAir8 && (
+          <Text>
+            <b>Труба Air 8:</b>{" "}
+            <Tooltip
+              title={`Внутренний: ${pipeAir8.innerDiameterRounded} мм
+        Наружный: ${pipeAir8.outerDiameter} мм
+        Стенка: ${pipeAir8.wallThickness} мм`}
+            >
+              <Tag color={gasAir8.color}>⌀{pipeAir8.outerDiameter}</Tag>
+            </Tooltip>
+          </Text>
+        )}
+
+        {pipeAgss && (
+          <Text>
+            <b>Труба AGSS:</b>{" "}
+            <Tooltip
+              title={`Внутренний: 14 мм
+        Наружный: 15 мм
+        Стенка: 1 мм`}
+            >
+              <Tag color="gold">⌀15</Tag>
+            </Tooltip>
+          </Text>
+        )}
       </Space>
 
       <Divider style={{ margin: "8px 0 12px" }} />
