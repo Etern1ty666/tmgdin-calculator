@@ -214,6 +214,8 @@ const totalAir_Lpm = totalAir5_Lpm + totalAir8_Lpm;
 const totalWithAgss_Lpm = totalAir_Lpm + totalAgss_Lpm;
 
 
+  const K8 = hasManual ? null : getAir8K(air8Points);
+
   const makeTooltip = (rows, total, unit = "л/мин") => (
     <div style={{ maxWidth: 360, lineHeight: 1.5 }}>
       {rows.map((d, i) => (
@@ -276,7 +278,6 @@ const totalWithAgss_Lpm = totalAir_Lpm + totalAgss_Lpm;
 
   const tooltipAir5 = makeTooltip(details.filter(d => d.type === "Air5"), totalAir5_Lpm);
 
-  const K8 = hasManual ? null : getAir8K(air8Points);
   const tooltipAir8 = (() => {
     const rows = details.filter(d => d.type === "Air8");
     if (rows.length === 0) return null;
