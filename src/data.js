@@ -231,17 +231,21 @@ export const rooms = [
   { type: "row", key: "adults_rea", name: "Реанимационные залы для взрослых",
     gases: [
       {key: 'oxygen', flowRate: 9, hoursPerDay: 24, usageFactor: 1.0 },
+      {key: 'n2o', flowRate: 6, hoursPerDay: 6, usageFactor: 0.4 },
+      {key: 'vacuum', flowRate: 40, usageFactor: 0.7},
       {key: 'air5', flowRate: 40, usageFactor: 1.0},
       {key: 'air8', flowRate: 40, usageFactor: 1.0},
-
+      {key: 'agss', },
     ]
   },
   { type: "row", key: "children_rea", name: "Реанимационные залы для детей",
     gases: [
       {key: 'oxygen', flowRate: 2, hoursPerDay: 24, usageFactor: 1.0 },
+      {key: 'n2o', flowRate: 3, hoursPerDay: 6, usageFactor: 0.4 },
+      {key: 'vacuum', flowRate: 40, usageFactor: 0.7},
       {key: 'air5', flowRate: 10, usageFactor: 1.0},
       {key: 'air8', flowRate: 10, usageFactor: 1.0},
-
+      {key: 'agss', },
     ]
   },
   { type: "row", key: "angiography", name: "Манипуляционные, процедурные ангиографии, эндоскопии, бронхоскопии, стоматологии",

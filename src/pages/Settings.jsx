@@ -384,6 +384,54 @@ export default observer(function SettingsLayout() {
       >
         <div style={{ marginBottom: 12 }}>
           <Title level={5} style={{ margin: 0, marginBottom: 4 }}>
+            Версия 0.2.1
+          </Title>
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            19 марта 2026
+          </Text>
+        </div>
+        <Divider style={{ margin: '12px 0' }} />
+        <div style={{ textAlign: 'left' }}>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>
+            Что нового:
+          </Text>
+          <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.8 }}>
+            <li>Обновлены данные помещений:
+              <ul>
+                <li>
+                  <b>Реанимационные залы для взрослых:</b> добавлены газы:<br />
+                  Закись азота — 6 л/мин, 6 ч/сут, коэф. использования 0.4<br />
+                  Вакуум — 40 л/мин, коэф. использования 0.7<br />
+                  AGSS — система удаления анестетиков
+                </li>
+                <li>
+                  <b>Реанимационные залы для детей:</b> добавлены газы:<br />
+                  Закись азота — 3 л/мин, 6 ч/сут, коэф. использования 0.4<br />
+                  Вакуум — 40 л/мин, коэф. использования 0.7<br />
+                  AGSS — система удаления анестетиков
+                </li>
+              </ul>
+            </li>
+            <li>Исправлен расчёт Air 8 в соответствии с п. 7.4.5.8 СП 158: коэффициент одновременности K теперь зависит от суммарного числа точек Air 8 по объекту (1 т. → 1,0; 2–4 → 0,7; 5–6 → 0,5; 7–10 → 0,3)</li>
+            <li>Улучшено отображение секции Air 5 / Air 8 / AGSS:
+              <ul>
+                <li>Air 5 и Air 8 теперь отображаются отдельными строками</li>
+                <li>Добавлены подсказки при наведении: Air 5 — разбивка по помещениям, Air 8 — точки и итоговая формула</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </Card>
+
+      <Card
+        style={{
+          marginBottom: 24,
+          borderRadius: 12,
+          background: token.colorBgContainer,
+        }}
+      >
+        <div style={{ marginBottom: 12 }}>
+          <Title level={5} style={{ margin: 0, marginBottom: 4 }}>
             Версия 0.2.0
           </Title>
           <Text type="secondary" style={{ fontSize: 13 }}>
@@ -475,7 +523,7 @@ export default observer(function SettingsLayout() {
       {/* Version at bottom */}
       <div style={{ textAlign: 'center', marginTop: 32, paddingTop: 16, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          Версия <b>0.2.0</b>
+          Версия <b>0.2.1</b>
         </Text>
       </div>
     </>

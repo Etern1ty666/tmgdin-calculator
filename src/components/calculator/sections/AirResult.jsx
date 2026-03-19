@@ -4,6 +4,14 @@ import { gases } from "../../../data";
 
 const { Title, Text } = Typography;
 
+function getAir8K(totalPoints) {
+  if (totalPoints <= 1) return 1.0;
+  if (totalPoints <= 4) return 0.7;
+  if (totalPoints <= 6) return 0.5;
+  if (totalPoints <= 10) return 0.3;
+  return 0.3; // >10: по технологическому заданию
+}
+
 function getPipeDiameter(totalLpm) {
   const hourlyM3 = (totalLpm * 60) / 1000;
   const innerDiameter = 18.8 * Math.sqrt(hourlyM3 / 10);
@@ -143,7 +151,6 @@ export default function AirResult({ values, rooms, manualTotals, manualUnits }) 
       if (N5 + N8 + Nagss <= 0) return;
 
       const gp5 = room.gases?.find((g) => g.key === "air5");
-      const gp8 = room.gases?.find((g) => g.key === "air8");
 
       if (N5 > 0 && gp5) {
         const V_m = gp5.flowRate ?? 0;
@@ -160,15 +167,12 @@ export default function AirResult({ values, rooms, manualTotals, manualUnits }) 
         air5Points += N5;
       }
 
-      if (N8 > 0 && gp8) {
-        const K = gp8.usageFactor ?? 1;
-        const V = 350 * N8 * K;
-        totalAir8_Lpm += V;
+      if (N8 > 0) {
         details.push({
           room: room.name,
           type: "Air8",
-          formula: `350×${N8}×${K}`,
-          value: V,
+          formula: `${N8} т.`,
+          value: N8,
         });
         totalPoints += N8;
         air8Points += N8;
@@ -190,6 +194,11 @@ export default function AirResult({ values, rooms, manualTotals, manualUnits }) 
     });
   }
 
+  if (!hasManual && air8Points > 0) {
+    const K8 = getAir8K(air8Points);
+    totalAir8_Lpm = 350 * air8Points * K8;
+  }
+
 const totalAgss_Lpm = (totalAgss_M3ph * 1000) / 60;
 
 const pipeAir5 =
@@ -204,6 +213,30 @@ const pipeAgss =
 const totalAir_Lpm = totalAir5_Lpm + totalAir8_Lpm;
 const totalWithAgss_Lpm = totalAir_Lpm + totalAgss_Lpm;
 
+
+  const makeTooltip = (rows, total, unit = "л/мин") => (
+    <div style={{ maxWidth: 360, lineHeight: 1.5 }}>
+      {rows.map((d, i) => (
+        <div
+          key={i}
+          style={{
+            fontSize: 12,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 8,
+            marginBottom: 2,
+          }}
+        >
+          <span title={d.room}>{d.room}: {d.formula}</span>
+          <b>{Math.round(d.value)} {unit}</b>
+        </div>
+      ))}
+      <hr style={{ margin: "6px 0", opacity: 0.3 }} />
+      <div style={{ fontSize: 12 }}>
+        <b>Итого:</b> {Math.round(total)} {unit}
+      </div>
+    </div>
+  );
 
   const tooltipDetails = (
     <div style={{ maxWidth: 360, lineHeight: 1.5 }}>
@@ -223,18 +256,81 @@ const totalWithAgss_Lpm = totalAir_Lpm + totalAgss_Lpm;
           <b>
             {d.type === "AGSS"
               ? `${d.value.toFixed(2)} м³/ч`
+              : d.type === "Air8" && !hasManual
+              ? `${d.value} т.`
               : `${Math.round(d.value)} л/мин`}
           </b>
         </div>
       ))}
       <hr style={{ margin: "6px 0", opacity: 0.3 }} />
       <div style={{ fontSize: 12 }}>
+        {!hasManual && air8Points > 0 && (
+          <>Air8: 350 × {air8Points} т. × K={K8} = <b>{Math.round(totalAir8_Lpm)} л/мин</b><br /></>
+        )}
         Σ Air5+Air8 = <b>{Math.round(totalAir_Lpm)} л/мин</b> <br />
         Σ AGSS = <b>{Math.round(totalAgss_Lpm)} л/мин</b> <br />
         <b>Итого:</b> {Math.round(totalWithAgss_Lpm)} л/мин
       </div>
     </div>
   );
+
+  const tooltipAir5 = makeTooltip(details.filter(d => d.type === "Air5"), totalAir5_Lpm);
+
+  const K8 = hasManual ? null : getAir8K(air8Points);
+  const tooltipAir8 = (() => {
+    const rows = details.filter(d => d.type === "Air8");
+    if (rows.length === 0) return null;
+    return (
+      <div style={{ maxWidth: 360, lineHeight: 1.5 }}>
+        {!hasManual && rows.map((d, i) => (
+          <div key={i} style={{ fontSize: 12, display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 2 }}>
+            <span title={d.room}>{d.room}</span>
+            <b>{d.value} т.</b>
+          </div>
+        ))}
+        {hasManual && rows.map((d, i) => (
+          <div key={i} style={{ fontSize: 12, display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 2 }}>
+            <span>{d.room}: {d.formula}</span>
+            <b>{Math.round(d.value)} л/мин</b>
+          </div>
+        ))}
+        <hr style={{ margin: "6px 0", opacity: 0.3 }} />
+        <div style={{ fontSize: 12 }}>
+          {!hasManual
+            ? <>350 × {air8Points} т. × K={K8} = <b>{Math.round(totalAir8_Lpm)} л/мин</b></>
+            : <><b>Итого:</b> {Math.round(totalAir8_Lpm)} л/мин</>}
+        </div>
+      </div>
+    );
+  })();
+
+  const tooltipNoAgss = (() => {
+    const air5Rows = details.filter(d => d.type === "Air5");
+    const air8Rows = details.filter(d => d.type === "Air8");
+    return (
+      <div style={{ maxWidth: 360, lineHeight: 1.5 }}>
+        {air5Rows.map((d, i) => (
+          <div key={i} style={{ fontSize: 12, display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 2 }}>
+            <span title={d.room}>{d.room} (Air5): {d.formula}</span>
+            <b>{Math.round(d.value)} л/мин</b>
+          </div>
+        ))}
+        {!hasManual && air8Rows.length > 0 && (
+          <div style={{ fontSize: 12, marginTop: 2 }}>
+            Air8: 350 × {air8Points} т. × K={K8} = <b>{Math.round(totalAir8_Lpm)} л/мин</b>
+          </div>
+        )}
+        {hasManual && air8Rows.map((d, i) => (
+          <div key={i} style={{ fontSize: 12, display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 2 }}>
+            <span>{d.room} (Air8): {d.formula}</span>
+            <b>{Math.round(d.value)} л/мин</b>
+          </div>
+        ))}
+        <hr style={{ margin: "6px 0", opacity: 0.3 }} />
+        <div style={{ fontSize: 12 }}><b>Итого:</b> {Math.round(totalAir_Lpm)} л/мин</div>
+      </div>
+    );
+  })();
 
   const columns = [
     { title: "Оборудование", dataIndex: "equipment", key: "equipment" },
@@ -384,10 +480,32 @@ const totalWithAgss_Lpm = totalAir_Lpm + totalAgss_Lpm;
           </Tooltip>
         </Text>
 
-        <Text>
-          <b>Без AGSS:</b>{" "}
-          <Tag color="blue">{Math.round(totalAir_Lpm)} л/мин</Tag>
-        </Text>
+        {totalAir5_Lpm > 0 && (
+          <Text>
+            <b>Air 5:</b>{" "}
+            <Tooltip title={tooltipAir5}>
+              <Tag color={gasAir5.color}>{Math.round(totalAir5_Lpm)} л/мин</Tag>
+            </Tooltip>
+          </Text>
+        )}
+
+        {totalAir8_Lpm > 0 && (
+          <Text>
+            <b>Air 8:</b>{" "}
+            <Tooltip title={tooltipAir8}>
+              <Tag color={gasAir8.color}>{Math.round(totalAir8_Lpm)} л/мин</Tag>
+            </Tooltip>
+          </Text>
+        )}
+
+        {totalAir_Lpm > 0 && totalAir5_Lpm > 0 && totalAir8_Lpm > 0 && (
+          <Text>
+            <b>Без AGSS:</b>{" "}
+            <Tooltip title={tooltipNoAgss}>
+              <Tag color="blue">{Math.round(totalAir_Lpm)} л/мин</Tag>
+            </Tooltip>
+          </Text>
+        )}
 
         <Text>
           <b>AGSS:</b>{" "}
@@ -448,8 +566,8 @@ const totalWithAgss_Lpm = totalAir_Lpm + totalAgss_Lpm;
 
       <Text type="secondary" style={{ fontSize: 12, lineHeight: 1.6 }}>
         <b>Принятые допущения:</b>
-        <br />• <b>Air&nbsp;5&nbsp;(0.4 МПа):</b>&nbsp;V&nbsp;=&nbsp;Vₘ&nbsp;×&nbsp;N&nbsp;×&nbsp;K&nbsp;(л/мин);
-        <br />• <b>Air&nbsp;8&nbsp;(0.8 МПа):</b>&nbsp;V&nbsp;=&nbsp;350&nbsp;×&nbsp;N&nbsp;×&nbsp;K&nbsp;(л/мин);
+        <br />• <b>Air&nbsp;5&nbsp;(0.4 МПа):</b>&nbsp;V&nbsp;=&nbsp;Vₘ&nbsp;×&nbsp;N&nbsp;×&nbsp;K&nbsp;(л/мин), Vₘ и K по таблице 7.6 СП&nbsp;158;
+        <br />• <b>Air&nbsp;8&nbsp;(0.8 МПа):</b>&nbsp;V&nbsp;=&nbsp;350&nbsp;×&nbsp;N&nbsp;×&nbsp;K&nbsp;(л/мин), K — коэффициент одновременности по п.&nbsp;7.4.5.8 СП&nbsp;158: 1 т.&nbsp;→&nbsp;1,0; 2–4&nbsp;→&nbsp;0,7; 5–6&nbsp;→&nbsp;0,5; 7–10&nbsp;→&nbsp;0,3;
         <br />• <b>AGSS:</b>&nbsp;1&nbsp;точка&nbsp;=&nbsp;3 м³/ч&nbsp;(добавляется к&nbsp;общему расходу воздуха);
         <br />• Производительность станции указана без учёта резервного компрессора;
         <br />• Один комплект оборудования — рабочий, другой — резервный.

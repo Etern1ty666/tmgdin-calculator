@@ -248,7 +248,7 @@ export default observer(function Calculator() {
     const oxy_pipe = oxy_avgLpm > 0 ? getPipeDiameter(oxy_avgLpm) : null;
 
     // Compute Air/AGSS
-    let air5_lpm = 0, air8_lpm = 0, agss_m3ph = 0, air_has = false, air_roomsCount = 0, air_totalPoints = 0;
+    let air5_lpm = 0, air8_lpm = 0, agss_m3ph = 0, air_has = false, air_roomsCount = 0, air_totalPoints = 0, air8_totalPoints = 0;
     filteredRooms.forEach((room) => {
       const N5 = Number(values[room.key]?.air5 || 0);
       const N8 = Number(values[room.key]?.air8 || 0);
@@ -267,18 +267,18 @@ export default observer(function Calculator() {
         }
       }
       if (N8 > 0) {
-        const gp8 = room.gases?.find((g) => g.key === "air8");
-        if (gp8) {
-          const K = Number(gp8.usageFactor ?? 1);
-          air8_lpm += 350 * N8 * K;
-          air_has = true;
-        }
+        air8_totalPoints += N8;
+        air_has = true;
       }
       if (Nagss > 0) {
         agss_m3ph += Nagss * 3;
         air_has = true;
       }
     });
+    if (air8_totalPoints > 0) {
+      const K8 = air8_totalPoints <= 1 ? 1.0 : air8_totalPoints <= 4 ? 0.7 : air8_totalPoints <= 6 ? 0.5 : 0.3;
+      air8_lpm = 350 * air8_totalPoints * K8;
+    }
     const air_total_m3ph = ((air5_lpm + air8_lpm) * 60) / 1000;
     const air_with_agss_m3ph = air_total_m3ph + agss_m3ph;
     const air_total_lpm = air5_lpm + air8_lpm;
@@ -576,7 +576,7 @@ export default observer(function Calculator() {
     }
 
     // Air / AGSS
-    let air5_lpm = 0, air8_lpm = 0, agss_m3ph = 0, air_has = false, air_roomsCount = 0, air_totalPoints = 0;
+    let air5_lpm = 0, air8_lpm = 0, agss_m3ph = 0, air_has = false, air_roomsCount = 0, air_totalPoints = 0, air8_totalPoints = 0;
     filteredRooms.forEach((room) => {
       const N5 = Number(values[room.key]?.air5 || 0);
       const N8 = Number(values[room.key]?.air8 || 0);
@@ -595,18 +595,18 @@ export default observer(function Calculator() {
         }
       }
       if (N8 > 0) {
-        const gp8 = room.gases?.find((g) => g.key === "air8");
-        if (gp8) {
-          const K = Number(gp8.usageFactor ?? 1);
-          air8_lpm += 350 * N8 * K;
-          air_has = true;
-        }
+        air8_totalPoints += N8;
+        air_has = true;
       }
       if (Nagss > 0) {
         agss_m3ph += Nagss * 3;
         air_has = true;
       }
     });
+    if (air8_totalPoints > 0) {
+      const K8 = air8_totalPoints <= 1 ? 1.0 : air8_totalPoints <= 4 ? 0.7 : air8_totalPoints <= 6 ? 0.5 : 0.3;
+      air8_lpm = 350 * air8_totalPoints * K8;
+    }
     const air_total_m3ph = ((air5_lpm + air8_lpm) * 60) / 1000;
     const air_with_agss_m3ph = air_total_m3ph + agss_m3ph;
     // Convert to l/min for export
