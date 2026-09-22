@@ -5,6 +5,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import HomePage from "../pages/HomePage";
 import Calculator from "../pages/Calculator";
 import ManualCalculator from "../pages/ManualCalculator";
+import CylinderCalculator from "../pages/CylinderCalculator";
 import Documentation from "../pages/Documentation";
 import Settings from "../pages/Settings";
 
@@ -25,6 +26,7 @@ export default function AppRoutes() {
       <Route path="/" element={<HomePage />} />
       <Route path="/calculator" element={<Calculator />} />
       <Route path="/calculator-manual" element={<ManualCalculator />} />
+      <Route path="/cylinders" element={<CylinderCalculator />} />
       <Route path="/settings" element={<Settings />} />
 
       {/* Документация и её внутренние страницы */}

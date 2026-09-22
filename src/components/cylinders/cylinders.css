@@ -1,0 +1,885 @@
+/*
+ * Калькулятор «жидкость ↔ баллоны», перенесён из отдельного приложения.
+ * Всё заперто внутрь .bc: рядом живёт antd, а имена card, unit, calc и spec
+ * слишком общие для глобальной области. Тему берём от хоста — он ставит
+ * data-theme на <html>, своего prefers-color-scheme тут нет.
+ *
+ * Размеры заданы через clamp(), раскладка тянется непрерывно от 320 px.
+ */
+.bc {
+  --surface: #ffffff;
+  --sunken: #eef1f5;
+  --border: #e4e8ee;
+  --border-strong: #cfd6e0;
+  --text: #0f172a;
+  --muted: #64748b;
+  --faint: #95a0ad;
+  --accent: #1266c9;
+  --accent-soft: #e8f1fc;
+  --accent-ring: rgba(18, 102, 201, 0.16);
+  /* на белом синее свечение теряется, поэтому светлой теме нужно больше */
+  --accent-glow: rgba(18, 102, 201, 0.42);
+  --hint: rgba(18, 102, 201, 0.45);
+
+  --fs-1: 11px;
+  --fs-2: 13px;
+  --fs-3: 16px;
+  --fs-4: 20px;
+  --fs-5: 21px;
+  --fs-6: 34px;
+
+  --r-sm: 9px;
+  --r-md: 13px;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 12px 30px -20px rgba(15, 23, 42, 0.35);
+
+  /* общие для всей раскладки: карточка и зазоры тянутся вместе с экраном */
+  --pad-page: clamp(12px, 4vw, 28px);
+  --pad-card: clamp(10px, 3vw, 22px);
+  --gap-col: clamp(8px, 2vw, 16px);
+
+  color-scheme: light;
+
+  /* фон отдаём хосту: своя подложка обрывалась швом там, где кончался контент */
+  padding-bottom: 24px;
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: var(--fs-3);
+  line-height: 1.5;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-theme='dark'] .bc {
+  --surface: #24282e;
+  --sunken: #1e2126;
+  --border: #32383f;
+  --border-strong: #454c55;
+  --text: #e6edf3;
+  --muted: #8b98a8;
+  --faint: #6e7a88;
+  --accent: #4f9df5;
+  --accent-soft: #14283f;
+  --accent-ring: rgba(79, 157, 245, 0.22);
+  --accent-glow: rgba(79, 157, 245, 0.42);
+  --hint: rgba(79, 157, 245, 0.5);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 30px -20px rgba(0, 0, 0, 0.9);
+  color-scheme: dark;
+}
+
+.bc,
+.bc *,
+.bc *::before,
+.bc *::after {
+  box-sizing: border-box;
+}
+
+/* только для экранного диктора: с display:none такое не читается */
+.bc-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * :where() обнуляет специфичность. Без него `.bc button` (0-1-1) перебивал бы
+ * собственные классы полей (0-1-0), и `font: inherit` сбрасывал бы их кегль.
+ */
+:where(.bc) :where(button, input, select) {
+  font: inherit;
+  color: inherit;
+}
+
+.bc :where(button, input, select):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.bc-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--pad-page) var(--pad-page) calc(var(--pad-page) + 24px);
+}
+
+.bc-card,
+.bc-view {
+  display: grid;
+  gap: clamp(14px, 3vw, 22px);
+}
+
+/* ============ Выбор газа ============ */
+
+.bc-gchips {
+  display: flex;
+  gap: 6px;
+}
+
+.bc-gchip {
+  --c: var(--gas);
+  flex: 1 1 0;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+  justify-items: center;
+  /* высота не меньше 48 px — комфортная цель для пальца */
+  padding: 9px 6px 8px;
+  background: var(--sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: border-color 0.14s, background 0.14s, color 0.14s, transform 0.12s;
+}
+
+[data-theme='dark'] .bc-gchip {
+  --c: var(--gas-dark);
+}
+
+.bc-gchip:hover {
+  border-color: var(--c);
+}
+
+.bc-gchip:active {
+  transform: scale(0.97);
+}
+
+.bc-gchip__top {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.bc-gchip__dot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  background: var(--c);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+
+.bc-gchip__formula {
+  font-size: var(--fs-3);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.bc-gchip__name {
+  font-size: var(--fs-1);
+  line-height: 1.25;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.bc-gchip--active {
+  background: var(--c);
+  border-color: var(--c);
+  color: var(--gas-ink);
+  box-shadow: 0 2px 10px -2px var(--c);
+}
+
+.bc-gchip--active .bc-gchip__name {
+  color: var(--gas-ink);
+  opacity: 0.8;
+}
+
+.bc-gchip--active .bc-gchip__dot {
+  background: var(--gas-ink);
+  box-shadow: none;
+  opacity: 0.85;
+}
+
+/* ============ Схема ============ */
+
+/*
+ * Крайние колонки по содержимому, средняя забирает остаток — стрелка тянется
+ * и не оставляет пустого места. Подписи в первом ряду, иллюстрации во втором,
+ * иначе блоки разной высоты центрируются порознь и схема выглядит кривой.
+ */
+.bc-flow {
+  display: grid;
+  grid-template-columns: auto minmax(44px, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  justify-items: center;
+  column-gap: var(--gap-col);
+  row-gap: 10px;
+  padding: var(--pad-card);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+}
+
+.bc-flow__cap {
+  grid-row: 1;
+  font-size: var(--fs-1);
+  font-weight: 600;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.bc-flow__cap--left {
+  grid-column: 1;
+}
+
+.bc-flow__cap--right {
+  grid-column: 3;
+}
+
+.bc-flow__art {
+  grid-row: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bc-flow__art--left {
+  grid-column: 1;
+}
+
+.bc-flow__art--right {
+  grid-column: 3;
+}
+
+.bc-flow__stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+/* Иллюстрации тянутся по ширине экрана, пропорции держит aspect-ratio */
+.bc-gsf {
+  --c: var(--gas);
+  width: clamp(140px, 30vw, 190px);
+  aspect-ratio: 120 / 150;
+  height: auto;
+}
+
+.bc-cyl {
+  --c: var(--gas);
+  width: clamp(51px, 12.7vw, 80px);
+  aspect-ratio: 68 / 200;
+  height: auto;
+}
+
+[data-theme='dark'] .bc-gsf,
+[data-theme='dark'] .bc-cyl {
+  --c: var(--gas-dark);
+}
+
+/* --- газификатор --- */
+
+.bc-gsf__shell {
+  fill: var(--sunken);
+}
+
+.bc-gsf__liquid {
+  fill: var(--c);
+}
+
+.bc-gsf--nogas .bc-gsf__liquid {
+  fill: var(--border-strong);
+}
+
+.bc-gsf__outline {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 2.5;
+}
+
+.bc-gsf__metal,
+.bc-gsf__evap {
+  fill: var(--border-strong);
+}
+
+.bc-gsf__fin {
+  fill: none;
+  stroke: var(--surface);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.75;
+}
+
+.bc-gsf__pipe {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* --- баллон --- */
+
+.bc-cyl__paint {
+  fill: var(--c);
+}
+
+.bc-cyl--nogas .bc-cyl__paint {
+  fill: var(--border-strong);
+}
+
+.bc-cyl__shade {
+  fill: #fff;
+  opacity: 0.16;
+}
+
+.bc-cyl__outline {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.25);
+  stroke-width: 2;
+}
+
+.bc-cyl__formula {
+  fill: var(--gas-ink);
+  font-family: inherit;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.bc-cyl--nogas .bc-cyl__formula {
+  fill: var(--surface);
+}
+
+/* ============ Поля на оборудовании ============ */
+
+/* обе таблички выглядят одинаково — белый шильдик на оборудовании */
+.bc-flow__plate,
+.bc-flow__countbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.25);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+/* только мышью: на тач-экране такой подсветки не будет, поэтому на неё
+   нельзя вешать саму подсказку «сюда можно вписывать» */
+@media (hover: hover) {
+  .bc-flow__plate:hover,
+  .bc-flow__countbox:hover {
+    border-color: var(--accent);
+    box-shadow: 0 1px 5px rgba(15, 23, 42, 0.25), 0 0 14px -4px var(--accent-glow);
+  }
+}
+
+/* кольцо очерчивает поле, размытый ореол под ним даёт свечение */
+.bc-flow__plate:focus-within,
+.bc-flow__countbox:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring), 0 0 18px -1px var(--accent-glow);
+}
+
+/*
+ * Табличка по содержимому, но не шире установки со свесом: 101,6 % — это
+ * прежний размах (100 % бокса плюс по 0,8 % свеса с каждой стороны).
+ */
+.bc-flow__plate {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  max-width: 101.6%;
+  transform: translate(-50%, -50%);
+}
+
+.bc-flow__input,
+.bc-flow__count {
+  padding: 0;
+  font-size: var(--fs-4);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  border: none;
+  outline: none;
+  appearance: textfield;
+  /*
+   * Единственная подсказка «сюда можно вписывать», которая видна в покое:
+   * на телефоне ни наведения, ни фокуса нет, а других признаков поля у числа
+   * не было. Пунктир рисуем фоном, а не text-decoration: тот идёт по ширине
+   * текста, и под однозначным числом оставался обрубок в пару точек.
+   * Фон не влияет на размеры, поэтому высоты полей не едут.
+   */
+  --line: var(--hint);
+  background: repeating-linear-gradient(to right, var(--line) 0 2px, transparent 2px 6px) 0 100% /
+    100% 2px no-repeat;
+}
+
+.bc-flow__input:focus,
+.bc-flow__count:focus {
+  --line: var(--accent);
+}
+
+.bc-flow__count:disabled {
+  background: none;
+}
+
+.bc-flow__input::-webkit-outer-spin-button,
+.bc-flow__input::-webkit-inner-spin-button,
+.bc-flow__count::-webkit-outer-spin-button,
+.bc-flow__count::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.bc-flow__input {
+  /* ширину задаёт число: flex: 1 растягивал поле на всю табличку */
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.bc-flow__count {
+  /* число прижато к слову, пунктир уходит влево: получается «__ баллон».
+     Минимум в два знака — иначе под однозначным пунктир слишком короткий */
+  min-width: 2ch;
+  text-align: right;
+}
+
+.bc-flow__count:disabled {
+  color: var(--faint);
+}
+
+.bc-flow__countunit {
+  display: inline-grid;
+  justify-items: start;
+  font-size: var(--fs-2);
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.bc-flow__countunit > * {
+  grid-area: 1 / 1;
+}
+
+.bc-flow__countghost {
+  visibility: hidden;
+}
+
+.bc-flow__units {
+  display: flex;
+  flex: none;
+  gap: 1px;
+  padding: 2px;
+  background: var(--sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.bc-unit {
+  position: relative;
+  min-width: 28px;
+  padding: 5px 6px;
+  font-size: var(--fs-2);
+  /* без этого строка в 1,5 кегля делает табличку выше коробки у баллонов */
+  line-height: 1;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+}
+
+/* зона нажатия выше самой кнопки: сама кнопка не должна растить табличку */
+.bc-unit::after {
+  content: '';
+  position: absolute;
+  inset: -8px 0;
+}
+
+.bc-unit--active {
+  color: #fff;
+  background: var(--accent);
+}
+
+/* --- параметры баллона поверх корпуса --- */
+
+.bc-flow__specs {
+  position: absolute;
+  left: 50%;
+  /* ниже формулы газа: она стоит в верхней трети корпуса */
+  top: 63%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.bc-spec {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 8px 4px 10px;
+  font-size: var(--fs-1);
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.3);
+  cursor: pointer;
+  transition: border-color 0.14s, color 0.14s;
+}
+
+.bc-spec__caret {
+  flex: none;
+  width: 8px;
+  height: 5px;
+  color: var(--faint);
+}
+
+.bc-spec:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.bc-spec:hover .bc-spec__caret,
+.bc-spec--unset .bc-spec__caret {
+  color: currentColor;
+}
+
+.bc-spec--unset {
+  color: var(--muted);
+  border-style: dashed;
+  border-color: var(--accent);
+}
+
+/* --- количество баллонов --- */
+
+/* знак и поле переносятся вместе — иначе × остаётся висеть у баллона */
+.bc-flow__mult {
+  display: flex;
+  align-items: center;
+  /* 8 ≈ 6 px зазора ряда + ~2 px прозрачных полей баллона: знак встаёт посередине */
+  gap: 8px;
+  min-width: 0;
+}
+
+.bc-flow__times {
+  display: flex;
+  flex: none;
+  font-size: var(--fs-5);
+  color: var(--faint);
+}
+
+.bc-flow__times svg {
+  width: 0.5em;
+  height: 0.5em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+/* --- стрелка переменной длины --- */
+
+.bc-flow__link {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  color: var(--faint);
+}
+
+.bc-flow__line {
+  flex: 1;
+  min-width: 8px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.bc-flow__head {
+  flex: none;
+  width: 12px;
+  height: 16px;
+  margin-left: -1px;
+}
+
+.bc-flow__head--back {
+  margin-left: 0;
+  margin-right: -1px;
+}
+
+/* ============ Итоговая строка ============ */
+
+/* ============ 560px и шире ============ */
+
+@media (min-width: 560px) {
+  .bc {
+    --fs-5: 25px;
+    --fs-6: 40px;
+  }
+
+  .bc-flow {
+    row-gap: 12px;
+  }
+
+  .bc-cyl__formula {
+    font-size: 22px;
+  }
+}
+
+/* ============ Узкий экран ============ */
+
+/*
+ * Ниже этого порога правая часть всегда идёт столбиком: баллон, знак, поле.
+ * Порог задан явно, а не отдан flex-wrap: иначе перенос строки и положение
+ * знака расходятся и знак встаёт столбиком у неперенесённой строки.
+ *
+ * Порог — точка, где строка перестаёт помещаться при значении по умолчанию:
+ *   нужно  = 140 (бак) + 2·0,02W (зазоры) + 44 (стрелка) + 0,127W (баллон)
+ *            + 6 + 136,5 (знак и поле)
+ *   есть   = 0,86W (ширина минус поля страницы и карточки)
+ * Расчёт даёт ≈471, замер — 480; берём замер. Ошибиться лучше в большую
+ * сторону: лишний столбик выглядит нормально, а знак у неперенесённой
+ * строки — нет.
+ *
+ * Порог зависит от ширины строки целиком. Его уже сдвигали обрезка viewBox
+ * баллона, второй наконечник стрелки и минимум в два знака у поля количества.
+ * Меняете любое слагаемое — перемеряйте: ищется ширина, на которой
+ * .bc-flow__mult перестаёт умещаться рядом с баллоном.
+ */
+@media (max-width: 479px) {
+  .bc-flow__art--right {
+    flex-direction: column;
+  }
+
+  .bc-flow__mult {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .bc-flow__times {
+    /* сверху уже есть 6 px зазора ряда и ~2 px прозрачных полей баллона */
+    margin-block: 0 8px;
+  }
+}
+
+/* ============ Низкий экран (телефон в ландшафте) ============ */
+
+/* Бак нельзя ужать: табличка фиксированной ширины и стоит ровно по его краям.
+   Поэтому в низком окне режем только вертикальные отступы. */
+@media (max-height: 520px) and (min-width: 560px) {
+  .bc-page {
+    padding-block: 10px calc(10px + 16px);
+  }
+
+  .bc-card,
+  .bc-view {
+    gap: 12px;
+  }
+
+  .bc-flow {
+    padding-block: 10px;
+  }
+}
+
+/* ============ Разбор расчёта ============ */
+
+.bc-calc {
+  min-width: 0;
+}
+
+.bc-calc__sum {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px 10px;
+  /* 10px по вертикали дают строке 44 px — комфортную зону нажатия */
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  list-style: none;
+}
+
+.bc-calc__sum::-webkit-details-marker {
+  display: none;
+}
+
+/*
+ * Нажимается вся строка, но подсвечиваем только ярлык: подложка во всю ширину
+ * красила 400 px ради ссылки в 86, а на светлом фоне совпадала с ним по цвету
+ * и не читалась вовсе. На тач-экране ховера нет, отсюда media.
+ */
+@media (hover: hover) {
+  .bc-calc__sum:hover .bc-calc__more {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+}
+
+.bc-calc__result {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 8px;
+  font-size: var(--fs-3);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.bc-calc__result i {
+  font-style: normal;
+  color: var(--faint);
+}
+
+.bc-calc__more {
+  font-size: var(--fs-2);
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--accent);
+}
+
+/* треугольник рисуем сами: у встроенного маркера не задать цвет и отступ */
+.bc-calc__more::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  border-radius: 1px;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.15s;
+}
+
+.bc-calc[open] .bc-calc__more::after {
+  transform: translateY(1px) rotate(-135deg);
+}
+
+.bc-calc__sum:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.bc-calc__body {
+  display: grid;
+  gap: 18px;
+  margin-top: 8px;
+  padding: var(--pad-card);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+.bc-calc__block {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bc-calc__title {
+  margin: 0;
+  font-size: var(--fs-2);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.bc-calc__text {
+  margin: 0;
+  font-size: var(--fs-2);
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.bc-calc__text b {
+  color: var(--text);
+}
+
+/* формулы шириной могут перерасти экран — уводим в прокрутку, а не в перенос */
+.bc-calc__math {
+  margin: 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--fs-1);
+  line-height: 1.7;
+  color: var(--text);
+  background: var(--sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  -webkit-overflow-scrolling: touch;
+}
+
+.bc-calc__facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--fs-2);
+}
+
+.bc-calc__facts > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.bc-calc__facts dt {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--muted);
+}
+
+.bc-calc__facts dd {
+  /* прижимаем значение вправо и на второй строке, если подпись не поместилась */
+  margin: 0 0 0 auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.bc-calc__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--fs-2);
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* на узком экране колонка одна, поэтому ломать grid незачем */
+@media (min-width: 720px) {
+  .bc-calc__body {
+    display: block;
+    columns: 2;
+    column-gap: 28px;
+  }
+
+  .bc-calc__block {
+    /* иначе колонка режет секцию посередине, между заголовком и формулой */
+    break-inside: avoid;
+    margin-bottom: 18px;
+  }
+
+  .bc-calc__block:last-child {
+    margin-bottom: 0;
+  }
+}

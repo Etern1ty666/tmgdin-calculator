@@ -1,0 +1,11 @@
+/** Русское склонение по числу: 1 баллон, 2 баллона, 5 баллонов */
+export function plural(n, one, few, many) {
+  const abs = Math.abs(Math.round(n))
+  const mod10 = abs % 10
+  const mod100 = abs % 100
+  if (mod10 === 1 && mod100 !== 11) return one
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few
+  return many
+}
+
+export const cylinders = (n) => plural(n, 'баллон', 'баллона', 'баллонов')
