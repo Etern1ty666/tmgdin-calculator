@@ -1,4 +1,3 @@
-import { Details } from './Details'
 import { GasChips } from './GasChips'
 import { CountBox } from './flow/CountBox'
 import { CylinderStage } from './flow/CylinderStage'
@@ -67,8 +66,6 @@ export function Scheme({ state, gas, derived, set, selectGas, setLiquid, setUnit
           <CountBox count={derived.cylinderField} disabled={!ready} onChange={setCylinders} withTimes />
         </div>
       </div>
-
-      <Details gas={gas} state={state} derived={derived} />
     </div>
   )
 }
