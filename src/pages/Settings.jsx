@@ -376,6 +376,20 @@ export default observer(function SettingsLayout() {
       
       <Card style={{ marginBottom: 24, borderRadius: 12, background: token.colorBgContainer }}>
         <div style={{ marginBottom: 12 }}>
+          <Title level={5} style={{ margin: 0, marginBottom: 4 }}>Версия 0.2.3</Title>
+          <Text type="secondary" style={{ fontSize: 13 }}>5 ноября 2026</Text>
+        </div>
+        <Divider style={{ margin: '12px 0' }} />
+        <div style={{ textAlign: 'left' }}>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>Что нового:</Text>
+          <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.8 }}>
+            <li>В послеоперационные палаты добавлен Air 5 с параметрами ПИТ для взрослых: расход 40 л/мин на точку, коэффициент использования 1.</li>
+          </ul>
+        </div>
+      </Card>
+
+      <Card style={{ marginBottom: 24, borderRadius: 12, background: token.colorBgContainer }}>
+        <div style={{ marginBottom: 12 }}>
           <Title level={5} style={{ margin: 0, marginBottom: 4 }}>Версия 0.2.2</Title>
           <Text type="secondary" style={{ fontSize: 13 }}>5 ноября 2026</Text>
         </div>
@@ -540,7 +554,7 @@ export default observer(function SettingsLayout() {
       {/* Version at bottom */}
       <div style={{ textAlign: 'center', marginTop: 32, paddingTop: 16, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          Версия <b>0.2.2</b>
+          Версия <b>0.2.3</b>
         </Text>
       </div>
     </>

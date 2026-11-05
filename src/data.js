@@ -182,6 +182,7 @@ export const rooms = [
     gases: [
       {key: 'oxygen', flowRate: 8, hoursPerDay: 24, usageFactor: 0.5 },
       {key: 'vacuum', flowRate: 20, usageFactor: 0.3},
+      {key: 'air5', flowRate: 40, usageFactor: 1.0},
 
     ]
   },
