@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, Typography, Divider, Space, Tag, Table, Tooltip } from "antd";
 import { gases } from "../../../data";
+import { calculateConcentratorDemand } from "./oxygenCalculations";
 
 const { Title, Text } = Typography;
 
@@ -196,8 +197,8 @@ export default function OxygenResult({ values, rooms, manualTotals, manualUnits 
     Math.ceil((totalOxygenLPerDay * EMERGENCY_DAYS) / OXYGEN_CYLINDER_VOLUME_L)
   );
 
-  // Концентратор: расчёт аварийного расхода на 0.1 суток
-  const concEmergencyLpm = Math.round((totalOxygenLPerDay * EMERGENCY_DAYS) / 1440);
+  const concentrator = calculateConcentratorDemand({ values, rooms, manualTotals, manualUnits });
+  const concEmergencyLpm = concentrator.emergencyLpm;
 
   // Тултипы
   const tooltipKGS = `(${dayGas_m3.toFixed(
@@ -206,9 +207,24 @@ export default function OxygenResult({ values, rooms, manualTotals, manualUnits 
   const tooltipCyl = `(${totalOxygenLPerDay.toLocaleString(
     "ru-RU"
   )} л/сут × ${CYLINDERS_DAYS} сут) ÷ ${OXYGEN_CYLINDER_VOLUME_L} = ${cylindersMain} шт`;
-  const tooltipConc = `${totalOxygenLPerDay.toLocaleString(
+  const tooltipAverage = `${totalOxygenLPerDay.toLocaleString(
     "ru-RU"
   )} ÷ 1440 = ${avgLpm} л/мин`;
+  const tooltipConc = hasManual ? tooltipDetailed : (
+    <div style={{ maxWidth: 340, lineHeight: 1.5 }}>
+      <div>Для концентратора K = 1 во всех помещениях.</div>
+      {details.map((d, i) => (
+        <div key={i} style={{ fontSize: 12, marginTop: 4 }}>
+          {d.room}: {d.V_m} × {d.N} × 1 × {d.t} × 60 = {(
+            d.V_m * d.N * d.t * 60
+          ).toLocaleString("ru-RU")} л/сут
+        </div>
+      ))}
+      <div style={{ marginTop: 6 }}>
+        {concentrator.totalLPerDay.toLocaleString("ru-RU")} ÷ 1440 = {concentrator.avgLpm} л/мин
+      </div>
+    </div>
+  );
 
   const columns = [
     { title: "Оборудование", dataIndex: "equipment", key: "equipment" },
@@ -265,17 +281,17 @@ export default function OxygenResult({ values, rooms, manualTotals, manualUnits 
       equipment: "Концентратор",
       main: (
         <Tooltip title={tooltipConc}>
-          <Tag color="green">{avgLpm} л/мин</Tag>
+          <Tag color="green">{concentrator.avgLpm} л/мин</Tag>
         </Tooltip>
       ),
       secondary: (
         <Tooltip title={tooltipConc}>
-          <Tag color="green">{avgLpm} л/мин</Tag>
+          <Tag color="green">{concentrator.avgLpm} л/мин</Tag>
         </Tooltip>
       ),
       reserve: (
         <Tooltip
-          title={`(${totalOxygenLPerDay.toLocaleString(
+          title={`(${concentrator.totalLPerDay.toLocaleString(
             "ru-RU"
           )} × ${EMERGENCY_DAYS}) ÷ 1440 = ${concEmergencyLpm} л/мин`}
         >
@@ -327,7 +343,7 @@ export default function OxygenResult({ values, rooms, manualTotals, manualUnits 
 
         <Text>
           <b>Средний:</b>{" "}
-          <Tooltip title={tooltipConc}>
+          <Tooltip title={tooltipAverage}>
             <Tag color="green">{avgLpm} л/мин</Tag>
           </Tooltip>
         </Text>
@@ -340,6 +356,15 @@ export default function OxygenResult({ values, rooms, manualTotals, manualUnits 
         </Text>
       </Space>
 
+      <div style={{ margin: "4px 0 12px" }}>
+        <Text strong>Для концентратора (K = 1):</Text>{" "}
+        <Tooltip title={tooltipConc}>
+          <Tag color="green">{concentrator.totalLPerDay.toLocaleString("ru-RU")} л/сут</Tag>
+          <Tag color="green">{concentrator.avgLpm} л/мин</Tag>
+        </Tooltip>
+        {hasManual && <div><Text type="secondary">Используется введённый расход.</Text></div>}
+      </div>
+
       <Divider style={{ margin: "8px 0 12px" }} />
       <Table size="small" pagination={false} columns={columns} dataSource={data} bordered />
       <Divider style={{ margin: "12px 0" }} />
@@ -348,7 +373,7 @@ export default function OxygenResult({ values, rooms, manualTotals, manualUnits 
         <b>Принятые допущения:</b>
         <br />• Газификатор — запас 5 сут (осн./втор.) и 0.1 сут аварийный;
         <br />• Баллонная рампа — 3 сут (осн./втор.) и аварийный запас 1 баллон (~0.1 сут);
-        <br />• Концентратор — средний расход (осн./втор.), аварийный запас — 0.1 сут работы;
+        <br />• Концентратор — отдельный расход при K = 1 для всех помещений с учётом часов работы; основной и вторичный — средний расход, аварийный — 0.1 сут работы;
         <br />• 1 м³ жидкого O₂ ≈ 860 м³ газообразного;
         <br />• 1 баллон (40 л, 15 МПа) ≈ 6000 л газа.
       </Text>

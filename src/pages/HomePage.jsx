@@ -141,7 +141,7 @@ export default function HomePage() {
                 display: 'block',
               }}
             >
-              Обновление 0.2.1
+              Обновление 0.2.2
             </Button>
           </motion.div>
         </Space>

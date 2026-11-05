@@ -545,7 +545,7 @@ const totalWithAgss_Lpm = totalAir_Lpm + totalAgss_Lpm;
           <Text>
             <b>Труба AGSS:</b>{" "}
             <Tooltip
-              title={`Внутренний: 14 мм
+              title={`Внутренний: 13 мм
         Наружный: 15 мм
         Стенка: 1 мм`}
             >

@@ -374,6 +374,23 @@ export default observer(function SettingsLayout() {
       </Text>
       <Divider />
       
+      <Card style={{ marginBottom: 24, borderRadius: 12, background: token.colorBgContainer }}>
+        <div style={{ marginBottom: 12 }}>
+          <Title level={5} style={{ margin: 0, marginBottom: 4 }}>Версия 0.2.2</Title>
+          <Text type="secondary" style={{ fontSize: 13 }}>5 ноября 2026</Text>
+        </div>
+        <Divider style={{ margin: '12px 0' }} />
+        <div style={{ textAlign: 'left' }}>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>Что нового:</Text>
+          <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.8 }}>
+            <li>Добавлен отдельный расход кислорода для концентратора с коэффициентом K = 1.</li>
+            <li>Обновлена выгрузка Excel: оформленные таблицы, единицы измерения, исходные данные по помещениям и допущения расчёта.</li>
+            <li>В выгрузку добавлены отдельные расходы и трубы Air 5, Air 8 и AGSS, а также предупреждения о недостающих системах.</li>
+            <li>Уточнён внутренний диаметр трубы AGSS: 13 мм при наружном диаметре 15 мм и стенке 1 мм.</li>
+          </ul>
+        </div>
+      </Card>
+
       {/* Patch Notes Card */}
       <Card
         style={{
@@ -523,7 +540,7 @@ export default observer(function SettingsLayout() {
       {/* Version at bottom */}
       <div style={{ textAlign: 'center', marginTop: 32, paddingTop: 16, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          Версия <b>0.2.1</b>
+          Версия <b>0.2.2</b>
         </Text>
       </div>
     </>
